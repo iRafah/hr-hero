@@ -1,8 +1,8 @@
 import tiktoken
+import os
 
 from openai import OpenAI
 from dotenv import load_dotenv
-import os
 
 load_dotenv()
 
@@ -31,7 +31,15 @@ functions = [
     }
 ]
 
-def truncate_text(text, max_tokens=3000, model="gpt-4-turbo"):
+def truncate_text(text, max_tokens: int = 3000, model="gpt-4-turbo"):
+    """
+    Safely truncate text to a maximum number of tokens using tiktoken.
+    Ensures that input is always a string.
+    """
+    # Ensure input is string
+    if not isinstance(text, str):
+        text = str(text) if text is not None else ""
+
     encoding = tiktoken.encoding_for_model(model)
     tokens = encoding.encode(text)
     if len(tokens) > max_tokens:
@@ -39,7 +47,7 @@ def truncate_text(text, max_tokens=3000, model="gpt-4-turbo"):
     return encoding.decode(tokens)
 
 # Main function to analyze CV using ChatGPT
-def agent_analyze_cv(cv_text, job_desc, model="gpt-4-turbo"):
+async def agent_analyze_cv(cv_text, job_desc, model="gpt-4-turbo"):
 
     # Truncate for safety
     job_description = truncate_text(job_desc)
@@ -77,6 +85,5 @@ def agent_analyze_cv(cv_text, job_desc, model="gpt-4-turbo"):
         max_tokens=4_096
     )
 
-    print(response.choices[0].message.function_call.arguments)
     # Extract and return just the response content
     return response.choices[0].message.function_call.arguments
