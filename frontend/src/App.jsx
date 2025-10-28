@@ -1,30 +1,53 @@
 import { useState } from 'react'
 
 import './App.css'
+import FormGroup from './components/FormGroup.jsx'
 
 function App() {
-  const [count, setCount] = useState(0)
+
+  const [jobTitle, setJobTitle] = useState('');
+  const [jobDescription, setJobDescription] = useState('');
+  const [cvFile, setCvFile] = useState(null);
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    // Here we send data to your FastAPI backend.
+
+    alert('Form submitted! Check console for data.');
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <form onSubmit={handleSubmit}>
+      <FormGroup label="Job title">
+        <input
+          type="text"
+          id="jobTitle"
+          placeholder="e.g., Senior Sofware Engineer"
+          value={jobTitle}
+          onChange={(e) => setJobTitle(e.target.value)}
+        />
+      </FormGroup>
+
+      <FormGroup label="Job description">
+        <textarea
+          id="jobDescription"
+          placeholder="Enter the job description"
+          value={jobDescription}
+          onChange={(e) => setJobDescription(e.target.value)}
+        >
+
+        </textarea>
+      </FormGroup>
+
+      <button
+        type="submit"
+        className="analyze-button"
+        disabled={!jobTitle || !jobDescription || !cvFile}
+      >
+
+        Analyse CV
+      </button>
+    </form>
   )
 }
 
