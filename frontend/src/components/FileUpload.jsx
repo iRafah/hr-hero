@@ -20,7 +20,7 @@ const FileUpload = ({
         }
     };
 
-    const handleRemoveFile = () => {
+    const handleRemoveFile = (index) => {
         setFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
     };
 

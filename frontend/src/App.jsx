@@ -2,17 +2,25 @@ import { useState } from 'react'
 import { GiRobotHelmet } from "react-icons/gi";
 import { FaMagnifyingGlass } from "react-icons/fa6";
 
-
-
 import './App.css'
 import FormGroup from './components/FormGroup.jsx'
 import FileUpload from './components/FileUpload.jsx'
+import CVAnalysisResults from './components/CVAnalysisResults.jsx'
 
 function App() {
 
   const [jobTitle, setJobTitle] = useState('');
   const [jobDescription, setJobDescription] = useState('');
   const [files, setFiles] = useState([]);
+
+
+  // Dummy result for demonstration. In real application, this would come from backend after analysis.
+  const result_json = {
+    match_score: '90',
+    missing_skills: ["Docker", "GraphQL"],
+    reasoning:
+      "Your CV matches most of the job requirements. However, experience with Docker and GraphQL would strengthen your profile even more.",
+  };
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -46,7 +54,7 @@ function App() {
                   type="text"
                   id="jobTitle"
                   placeholder="e.g., Full-Stack Developer"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700"
                   value={jobTitle}
                   onChange={(e) => setJobTitle(e.target.value)}
                 />
@@ -62,7 +70,7 @@ function App() {
                 <textarea
                   placeholder="Paste the job description here"
                   rows="5"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700"
                   value={jobDescription}
                   onChange={(e) => setJobDescription(e.target.value)}
                 ></textarea>
@@ -81,6 +89,17 @@ function App() {
               <FaMagnifyingGlass className="inline-block ml-2" />
             </button>
           </form>
+
+
+          {!result_json ? (
+            <div className="text-green-800 text-bold flex items-center mt-5">Analyzing CV... <div className="loading-spinner ml-2"></div></div>
+          ) : result_json.match_score ? (
+            <CVAnalysisResults result={result_json} />
+          ) : (
+            <div className="text-gray-500 italic">
+              No results available yet.
+            </div>
+          )}
         </div>
       </div>
     </main>
