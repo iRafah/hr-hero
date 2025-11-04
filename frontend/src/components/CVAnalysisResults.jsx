@@ -26,7 +26,7 @@ const CVAnalysisResults = ({ result }) => {
             </div>
 
             {/* Missing Skills */}
-            <h3 className="text-xl font-semibold mt-6 text-gray-600 r"><ImPushpin className="mr-2" /> Missing Skills</h3>
+            <h3 className="text-xl font-semibold mt-6 text-gray-600 flex items-center"><ImPushpin className="mr-2" /> Missing Skills</h3>
 
             {result.missing_skills && result.missing_skills.length > 0 ? (
                 <ul className="list-disc pl-5 mt-2 space-y-2">

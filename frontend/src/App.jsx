@@ -11,8 +11,8 @@ function App() {
 
   const [jobTitle, setJobTitle] = useState('');
   const [jobDescription, setJobDescription] = useState('');
+  const [allowSubmit, setAllowSubmit] = useState(false);
   const [files, setFiles] = useState([]);
-
 
   // Dummy result for demonstration. In real application, this would come from backend after analysis.
   const result_json = {
@@ -22,8 +22,17 @@ function App() {
       "Your CV matches most of the job requirements. However, experience with Docker and GraphQL would strengthen your profile even more.",
   };
 
+  const isFormValid = () => {
+    return jobTitle.trim() !== '' && jobDescription.trim() !== '' && files.length > 0;
+  };
+
   const handleSubmit = (event) => {
-    event.preventDefault();
+    if (!isFormValid()) {
+      alert('Please fill in all required fields.');
+      //event.preventDefault();
+      return;
+    }
+
     // Here we send data to your FastAPI backend.
 
     alert('Form submitted! Check console for data.');
@@ -43,7 +52,7 @@ function App() {
 
       <div className="flex items-center justify-center px-4 mt-15">
         <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-8 space-y-6">
-          <form className="space-y-5">
+          <form className="space-y-5" action={handleSubmit}>
             <div>
               {/* Job title */}
               <FormGroup>
@@ -84,6 +93,7 @@ function App() {
             <button
               type="submit"
               className="w-full bg-green-600 text-white font-medium py-2.5 rounded-lg hover:bg-green-700 transition cursor-pointer"
+              disabled={allowSubmit}
             >
               Analyse CV
               <FaMagnifyingGlass className="inline-block ml-2" />
