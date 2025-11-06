@@ -2,7 +2,7 @@ import React from "react";
 
 const FormGroup = ({ label, children }) => (
     <div className="form-group">
-        <label>{label}</label>
+        {label}
         {children}
     </div>
 )
