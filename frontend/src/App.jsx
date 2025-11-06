@@ -56,7 +56,7 @@ function App() {
             <div>
               {/* Job title */}
               <FormGroup>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-md font-medium text-gray-700 my-1" htmlFor="jobTitle" >
                   Job title
                 </label>
                 <input
@@ -73,10 +73,11 @@ function App() {
             {/* Job description */}
             <div>
               <FormGroup>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-md font-medium text-gray-700 my-1" htmlFor="jobDescription">
                   Job description
                 </label>
                 <textarea
+                  id="jobDescription"
                   placeholder="Paste the job description here"
                   rows="5"
                   className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700"
