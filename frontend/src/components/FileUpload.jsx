@@ -2,11 +2,7 @@ import { useEffect, useState } from "react";
 import { AiOutlineCheckCircle, AiOutlineCloudUpload } from "react-icons/ai";
 import { MdClear } from "react-icons/md";
 
-const FileUpload = ({
-    onFileSelect,
-    width,
-    height,
-}) => {
+const FileUpload = ({ onFileSelect }) => {
 
     const [files, setFiles] = useState([]);
 
@@ -26,18 +22,19 @@ const FileUpload = ({
 
     const handleFileChange = (event) => {
         const selectedFiles = event.target.files;
+        console.log(selectedFiles);
         if (selectedFiles && selectedFiles.length > 0) {
             const newFiles = Array.from(selectedFiles);
             setFiles((prevFiles) => [...prevFiles, ...newFiles]);
         }
     };
 
-    /*useEffect(() => {
-        onFilesSelected(files);
-    }, [files, onFilesSelected]);*/
+    useEffect(() => {
+        onFileSelect(files);
+    }, [files, onFileSelect]);
 
     return (
-        <section className="drag-drop" style={{ width: width, height: height }}>
+        <section className="drag-drop">
             <div
                 className={`document-uploader ${files.length > 0 ? "upload-box active" : "upload-box"}`}
                 onDrop={handDrop}
