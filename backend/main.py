@@ -7,10 +7,12 @@ from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from pypdf import PdfReader
+from fastapi.responses import JSONResponse
+import json
 
 app = FastAPI(debug=True)
 origins = [
-    "https://localhost:3000",
+    "http://localhost:5173",
 ]
 
 app.add_middleware(
@@ -61,7 +63,10 @@ async def analyze_cv(
     else:
         return "File extension not allowed. Upload a PDF or DOCX file"
     
-    return await agent_analyze_cv(cv_text=cv_text, job_desc=job_description) 
+    result = await agent_analyze_cv(cv_text=cv_text, job_desc=job_description)
+    if isinstance(result, str):
+        result = json.loads(result)
+    return JSONResponse(content=result)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

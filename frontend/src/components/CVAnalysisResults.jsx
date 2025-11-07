@@ -7,6 +7,21 @@ import { MdAnalytics } from "react-icons/md";
 
 
 const CVAnalysisResults = ({ result }) => {
+    // console.log("CV Analysis Results:", result);
+    // console.log(result.missing_skills);
+
+    // Extract digits from match_score if needed
+    function extractScoreValue(text) {
+        const match_score = result.match_score || "";
+        let score = "";
+        for (const char of String(match_score)) {
+            if (/\d/.test(char)) {
+                score += char;
+            }
+        }
+        return parseInt(score, 10);
+    }
+
     return (
         <div className="w-full mx-auto mt-10 p-6 bg-white rounded-2xl shadow-lg">
             {/* Header */}
@@ -20,15 +35,15 @@ const CVAnalysisResults = ({ result }) => {
             <div className="mt-4">
                 <h3 className="text-lg font-medium text-gray-600 flex items-center"><FaMagnifyingGlass className="mr-2" /> Match Score</h3>
                 <p
-                    className={`text-3xl font-bold ${result.match_score >= 70 ? "text-green-500" : "text-red-500"}`}>
-                    {result.match_score}%
+                    className={`text-3xl font-bold ${extractScoreValue(result.match_score) >= 70 ? "text-green-500" : "text-red-500"}`}>
+                    {result.match_score}
                 </p>
             </div>
 
             {/* Missing Skills */}
             <h3 className="text-xl font-semibold mt-6 text-gray-600 flex items-center"><ImPushpin className="mr-2" /> Missing Skills</h3>
 
-            {result.missing_skills && result.missing_skills.length > 0 ? (
+            {result.missing_skills && result.missing_skills ? (
                 <ul className="list-disc pl-5 mt-2 space-y-2">
                     {result.missing_skills.map((skill, index) => (
                         <li key={index} className="text-red-600 font-medium">
