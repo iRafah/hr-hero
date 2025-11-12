@@ -46,27 +46,34 @@ async def analyze_cv(
     cv_file: UploadFile = File(...)
 ):
     # Validate the job data
-    job_data = JobData(job_title=job_title, job_description=job_description)
-    job_description = "\n".join([job_data.job_title, job_data.job_description])
+    # job_data = JobData(job_title=job_title, job_description=job_description)
+    # job_description = "\n".join([job_data.job_title, job_data.job_description])
     
-    # Save temporarily to process
-    with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{cv_file.filename}") as tmp:
-        contents = await cv_file.read()
-        tmp.write(contents)
-        file_path = tmp.name
+    # # Save temporarily to process
+    # with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{cv_file.filename}") as tmp:
+    #     contents = await cv_file.read()
+    #     tmp.write(contents)
+    #     file_path = tmp.name
 
-    # Extract data
-    if cv_file.filename.endswith(".pdf"):
-        cv_text = await extract_text_from_pdf(file_path)
-    elif cv_file.filename.endswith(".docx"):
-        cv_text = await extract_text_from_docx(file_path)
-    else:
-        return "File extension not allowed. Upload a PDF or DOCX file"
+    # # Extract data
+    # if cv_file.filename.endswith(".pdf"):
+    #     cv_text = await extract_text_from_pdf(file_path)
+    # elif cv_file.filename.endswith(".docx"):
+    #     cv_text = await extract_text_from_docx(file_path)
+    # else:
+    #     return "File extension not allowed. Upload a PDF or DOCX file"
     
-    result = await agent_analyze_cv(cv_text=cv_text, job_desc=job_description)
-    if isinstance(result, str):
-        result = json.loads(result)
-    return JSONResponse(content=result)
+    # result = await agent_analyze_cv(cv_text=cv_text, job_desc=job_description)
+    # if isinstance(result, str):
+    #     result = json.loads(result)
+    # return JSONResponse(content=result)
+
+    mock_response = {
+        "match_score": 85,
+        "missing_skills": ["React", "GraphQL", "CI/CD"],
+        "reasoning": "The candidate has strong Drupal and PHP skills but lacks modern frontend and DevOps experience."
+    }
+    return mock_response
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

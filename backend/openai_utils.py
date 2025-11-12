@@ -59,7 +59,7 @@ async def agent_analyze_cv(cv_text, job_desc, model="gpt-4-turbo"):
             {
                 "role": "system",
                 "content": (
-                    "You are an AI HR assistant. Your role is to objectively analyze candidate CVs "
+                    "You are a Human Resource assistant. Your role is to objectively analyze candidate Curriculum Vitae (CV) "
                     "and compare them to job descriptions to assess alignment."
                 )
             },
@@ -81,7 +81,7 @@ async def agent_analyze_cv(cv_text, job_desc, model="gpt-4-turbo"):
         ],
         functions=functions,
         function_call="auto",
-        temperature=0.2,
+        temperature=0.3,
         max_tokens=4_096
     )
 

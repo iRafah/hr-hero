@@ -15,8 +15,6 @@ function App() {
   const [jobDescription, setJobDescription] = useState('');
   const [files, setFiles] = useState([]);
   const [isAnalysing, setIsAnalysing] = useState(false);
-
-  // Dummy result for demonstration. In real application, this would come from backend after analysis.
   const [resultJson, setResultJson] = useState(null);
 
   const isFormValid = () => {
@@ -32,8 +30,11 @@ function App() {
 
     // Send the data to the API.
     try {
-      setIsAnalysing(true);
       setResultJson(null);
+      setIsAnalysing(true);
+
+      // slight delay to show analysing state
+      await new Promise((r) => setTimeout(r, 5000));
 
       const formData = new FormData();
       formData.append('job_title', jobTitle);
@@ -50,6 +51,11 @@ function App() {
       console.log('Response data:', response.data);
       setResultJson(response.data);
 
+      // setTimeout(() => {
+      //   setResultJson(response.data);
+      //   //setIsAnalysing(false);
+      // }, 3000); // simulate network delay
+
     } catch (err) {
       if (err.response) {
         console.error('POST failed with status:', err.response.status, err.response.statusText);
@@ -62,6 +68,23 @@ function App() {
     finally {
       setIsAnalysing(false);
     }
+
+    // setIsAnalysing(true);
+    // setResultJson(null);
+
+    // const mockData = {
+    //   match_score: 95,
+    //   missing_skills: [],
+    //   reasoning:
+    //     "The candidate's CV fully aligns with the job description, demonstrating strong experience in all required areas.",
+    // };
+
+    // setTimeout(() => {
+    //   setResultJson(mockData);
+    //   setIsAnalysing(false);
+    // }, 3000); // simulate network delay
+
+    // return; // ⛔ prevent real API call
 
   };
 
@@ -120,19 +143,44 @@ function App() {
             {/* Submit */}
             <button
               type="submit"
-              className="w-full bg-green-600 text-white font-medium py-2.5 rounded-lg hover:bg-green-700 transition cursor-pointer"
+              className={`w-full text-white font-medium py-2.5 rounded-lg transition cursor-pointer flex items-center justify-center gap-2 ${isAnalysing
+                ? 'bg-green-400 cursor-not-allowed opacity-80'
+                : 'bg-green-600 hover:bg-green-700'
+                }`}
               disabled={isAnalysing}
             >
-              Analyse CV
-              <FaMagnifyingGlass className="inline-block ml-2" />
+              {isAnalysing ? (
+                <>
+                  <svg
+                    className="animate-spin h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                    ></path>
+                  </svg>
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  Analyse CV
+                  <FaMagnifyingGlass className="inline-block ml-1" />
+                </>
+              )}
             </button>
           </form>
-
-          {isAnalysing && (
-            <div className="text-green-800 font-bold flex items-center mt-5 justify-center">
-              Analyzing CV... <div className="loading-spinner ml-2"></div>
-            </div>
-          )}
 
           {!isAnalysing && (
             resultJson ? (

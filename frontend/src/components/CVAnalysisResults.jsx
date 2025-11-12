@@ -4,15 +4,14 @@ import { FaCheckSquare } from "react-icons/fa";
 import { ImPushpin } from "react-icons/im";
 import { FaMagnifyingGlass } from "react-icons/fa6";
 import { MdAnalytics } from "react-icons/md";
+import { motion } from "framer-motion";
 
 
 const CVAnalysisResults = ({ result }) => {
-    // console.log("CV Analysis Results:", result);
-    // console.log(result.missing_skills);
 
     // Extract digits from match_score if needed
     function extractScoreValue(text) {
-        const match_score = result.match_score || "";
+        const match_score = text || "";
         let score = "";
         for (const char of String(match_score)) {
             if (/\d/.test(char)) {
@@ -23,7 +22,12 @@ const CVAnalysisResults = ({ result }) => {
     }
 
     return (
-        <div className="w-full mx-auto mt-10 p-6 bg-white rounded-2xl shadow-lg">
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="w-full mt-5 mx-auto p-6 bg-white rounded-2xl shadow-md"
+        >
             {/* Header */}
             <h2 className="text-2xl font-semibold flex items-center gap-2" style={{ color: '#0d5e7a' }}>
                 <MdAnalytics /> CV Analysis Results
@@ -43,7 +47,7 @@ const CVAnalysisResults = ({ result }) => {
             {/* Missing Skills */}
             <h3 className="text-xl font-semibold mt-6 text-gray-600 flex items-center"><ImPushpin className="mr-2" /> Missing Skills</h3>
 
-            {result.missing_skills && result.missing_skills ? (
+            {result.missing_skills && result.missing_skills.length > 0 ? (
                 <ul className="list-disc pl-5 mt-2 space-y-2">
                     {result.missing_skills.map((skill, index) => (
                         <li key={index} className="text-red-600 font-medium">
@@ -62,7 +66,7 @@ const CVAnalysisResults = ({ result }) => {
             <p className="mt-2 text-gray-700 leading-relaxed whitespace-pre-line">
                 {result.reasoning}
             </p>
-        </div>
+        </motion.div>
     );
 };
 
