@@ -41,7 +41,7 @@ function App() {
       formData.append('job_description', jobDescription);
       formData.append('cv_file', files[0]);
 
-      const response = await api.post('/analyse-cv', formData, {
+      const response = await api.post('/analyse-single-cv', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

@@ -10,8 +10,8 @@ client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 functions = [
     {
-        "name": "analyze_cv",
-        "description": "Analyze a CV and job description",
+        "name": "analyse_cv",
+        "description": "Analyse a CV and job description",
         "parameters": {
             "type": "object",
             "properties": {
@@ -46,8 +46,8 @@ def truncate_text(text, max_tokens: int = 3000, model="gpt-4-turbo"):
         tokens = tokens[:max_tokens]
     return encoding.decode(tokens)
 
-# Main function to analyze CV using ChatGPT
-async def agent_analyze_cv(cv_text, job_desc, model="gpt-4-turbo"):
+# Main function to analyse CV using the GPT model
+async def agent_analyse_cv(cv_text, job_desc, model="gpt-4-turbo"):
 
     # Truncate for safety
     job_description = truncate_text(job_desc)
@@ -59,7 +59,7 @@ async def agent_analyze_cv(cv_text, job_desc, model="gpt-4-turbo"):
             {
                 "role": "system",
                 "content": (
-                    "You are a Human Resource assistant. Your role is to objectively analyze candidate Curriculum Vitae (CV) "
+                    "You are a Human Resource assistant. Your role is to objectively analyse candidate Curriculum Vitae (CV) "
                     "and compare them to job descriptions to assess alignment."
                 )
             },
@@ -68,7 +68,7 @@ async def agent_analyze_cv(cv_text, job_desc, model="gpt-4-turbo"):
                 "content": (
                     f"Job Description:\n{job_description}\n\n"
                     f"Candidate CV:\n{cv_description}\n\n"
-                    "Please analyze the CV against the job description and return the following:\n"
+                    "Please analyse the CV against the job description and return the following:\n"
                     "1. A match score from 0% to 100% estimating how well the CV aligns with the job requirements.\n"
                     "2. Up to 5 missing or weak skills/knowledge areas, if any, prioritized by relevance to the job.\n"
                     "3. A brief explanation of your assessment and reasoning.\n\n"
@@ -87,3 +87,4 @@ async def agent_analyze_cv(cv_text, job_desc, model="gpt-4-turbo"):
 
     # Extract and return just the response content
     return response.choices[0].message.function_call.arguments
+
