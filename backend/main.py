@@ -68,17 +68,21 @@ async def analyse_cv(
         return "File extension not allowed. Upload a PDF or DOCX file"
     
     result = await agent_analyse_cv(cv_text=cv_text, job_desc=job_description)
+    
     if isinstance(result, str):
         result = json.loads(result)
-    return JSONResponse(content=result)
+        result["filename"] = cv_file.filename
+    return JSONResponse(content=[result])
 
     # For demonstration purposes, return a mock response instead of actual analysis
     # mock_response = {
     #     "match_score": '85%',
     #     "missing_skills": ["React", "GraphQL", "CI/CD"],
-    #     "reasoning": "The candidate has strong Drupal and PHP skills but lacks modern frontend and DevOps experience."
+    #     "reasoning": "The candidate has strong Drupal and PHP skills but lacks modern frontend and DevOps experience.",
+    #     "candidate_name": "Alex Johnson"
     # }
-    # return mock_response
+    
+    # return JSONResponse(content=[mock_response])
 
 @app.post("/analyse-multiple-cvs")
 async def analyse_multiple_cvs(
@@ -102,6 +106,7 @@ async def analyse_multiple_cvs(
             "match_score": parsed.get("match_score"),
             "missing_skills": parsed.get("missing_skills", []),
             "reasoning": parsed.get("reasoning", ""),
+            "candidate_name": parsed.get("candidate_name", "")
         }
     
     tasks = await asyncio.gather(*[process_cv(file) for file in cv_files])
@@ -114,6 +119,40 @@ async def analyse_multiple_cvs(
     )
 
     return {"results": sorted_results}
+
+    # mock_multiple_response = [
+    #     {
+    #         "filename": "candidate_1.pdf",
+    #         "candidate_name": "Rafael Santos",
+    #         "match_score": "72%",
+    #         "missing_skills": [],
+    #         "reasoning": "The candidate meets all technical and soft skill requirements. Strong alignment with the job description and no key skill gaps identified."
+    #     },
+    #     {
+    #         "filename": "candidate_2.docx",
+    #         "candidate_name": "Maria Garcia",
+    #         "match_score": "78%",
+    #         "missing_skills": ["Docker", "Kubernetes"],
+    #         "reasoning": "The candidate demonstrates solid PHP and Drupal knowledge but lacks containerisation experience required for deployment workflows."
+    #     },
+    #     {
+    #         "filename": "candidate_3.pdf",
+    #         "candidate_name": "John Doe",
+    #         "match_score": "94%",
+    #         "missing_skills": ["React", "REST APIs", "Unit Testing"],
+    #         "reasoning": "While the candidate has backend experience, they are missing several essential frontend and testing skills mentioned in the job description."
+    #     },
+    #     {
+    #         "filename": "candidate_4.docx",
+    #         "candidate_name": "Jane Smith",
+    #         "match_score": "47%",
+    #         "missing_skills": ["Drupal", "PHP", "Git", "CI/CD"],
+    #         "reasoning": "The candidate has general tech experience but lacks core requirements for the role. Significant skill gaps detected."
+    #     }
+    # ]
+
+    
+    # return JSONResponse(content=mock_multiple_response)
 
 
 if __name__ == "__main__":

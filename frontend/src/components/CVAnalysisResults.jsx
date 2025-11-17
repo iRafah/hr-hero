@@ -29,8 +29,13 @@ const CVAnalysisResults = ({ result }) => {
             className="w-full mt-5 mx-auto p-6 bg-white rounded-2xl shadow-md"
         >
             {/* Header */}
-            <h2 className="text-2xl font-semibold flex items-center gap-2" style={{ color: '#0d5e7a' }}>
-                <MdAnalytics /> CV Analysis Results
+            <h2 className="text-xl font-semibold flex items-center gap-2" style={{ color: '#0d5e7a' }}>
+                <MdAnalytics />
+                {result.candidate_name ? (
+                    `${result.candidate_name}'s results (${result.filename})`
+                ) : (
+                    "CV Analysis Results"
+                )}
             </h2>
             {/* Divider */}
             <hr className="my-4 border-gray-200" />

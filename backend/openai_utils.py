@@ -24,9 +24,10 @@ functions = [
                         "type": "string"
                     }
                 },
-                "reasoning": { "type": "string"}
+                "reasoning": { "type": "string"},
+                "candidate_name": { "type": "string"},
             },
-            "required": ["match_score", "missing_skills", "reasoning"]
+            "required": ["match_score", "missing_skills", "reasoning", "candidate_name"]
         }
     }
 ]
@@ -72,6 +73,7 @@ async def agent_analyse_cv(cv_text, job_desc, model="gpt-4-turbo"):
                     "1. A match score from 0% to 100% estimating how well the CV aligns with the job requirements.\n"
                     "2. Up to 5 missing or weak skills/knowledge areas, if any, prioritized by relevance to the job.\n"
                     "3. A brief explanation of your assessment and reasoning.\n\n"
+                    "4. Extract the candidate's full name from the CV.\n\n"
                     "Guidelines:\n"
                     "- If the CV mentions a skill in general terms and the job description provides more specific context, consider it a match. For example, if the CV mentions 'English' and the job requires 'Fluent in English', treat it as a match.\n"
                     "- This approach ensures the company can evaluate the depth themselves and avoids penalizing the candidate unfairly.\n"
@@ -80,11 +82,17 @@ async def agent_analyse_cv(cv_text, job_desc, model="gpt-4-turbo"):
             }
         ],
         functions=functions,
-        function_call="auto",
+        function_call={ "name": "analyse_cv" },
         temperature=0.3,
         max_tokens=4_096
     )
 
     # Extract and return just the response content
-    return response.choices[0].message.function_call.arguments
+    result = response.choices[0].message
+    print("DEBUG message:", response.choices[0].message)
+
+    if result.function_call is None:
+        raise RuntimeError("Model did not return a function_call. Full message: " + str(msg))
+
+    return result.function_call.arguments
 

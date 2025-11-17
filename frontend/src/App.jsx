@@ -28,6 +28,7 @@ function App() {
       return;
     }
 
+    let response;
     // Send the data to the API.
     try {
       setResultJson(null);
@@ -39,13 +40,32 @@ function App() {
       const formData = new FormData();
       formData.append('job_title', jobTitle);
       formData.append('job_description', jobDescription);
-      formData.append('cv_file', files[0]);
+      files.forEach((file => formData.append('cv_files', file)));
 
-      const response = await api.post('/analyse-single-cv', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      // const response = await api.post('/analyse-multiple-cvs', formData, {
+      //   headers: {
+      //     'Content-Type': 'multipart/form-data',
+      //   },
+      // });
+
+      if (files.length > 1) {
+        files.forEach((file => formData.append('cv_files', file)));
+
+        response = await api.post('/analyse-multiple-cvs', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+      }
+      else {
+        formData.append('cv_file', files[0]);
+
+        response = await api.post('/analyse-single-cv', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+      }
 
       console.log('Status:', response.status);
       console.log('Response data:', response.data);
@@ -184,7 +204,9 @@ function App() {
 
           {!isAnalysing && (
             resultJson ? (
-              <CVAnalysisResults result={resultJson} />
+              resultJson.map((result, index) => (
+                <CVAnalysisResults key={index} result={result} />
+              ))
             ) : (
               <div className="text-gray-500 italic">No results available yet.</div>
             )
