@@ -40,13 +40,6 @@ function App() {
       const formData = new FormData();
       formData.append('job_title', jobTitle);
       formData.append('job_description', jobDescription);
-      files.forEach((file => formData.append('cv_files', file)));
-
-      // const response = await api.post('/analyse-multiple-cvs', formData, {
-      //   headers: {
-      //     'Content-Type': 'multipart/form-data',
-      //   },
-      // });
 
       if (files.length > 1) {
         files.forEach((file => formData.append('cv_files', file)));

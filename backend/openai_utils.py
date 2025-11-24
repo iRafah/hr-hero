@@ -24,8 +24,8 @@ functions = [
                         "type": "string"
                     }
                 },
-                "reasoning": { "type": "string"},
-                "candidate_name": { "type": "string"},
+                "reasoning": { "type": "string" },
+                "candidate_name": { "type": "string" },
             },
             "required": ["match_score", "missing_skills", "reasoning", "candidate_name"]
         }

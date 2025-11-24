@@ -12,8 +12,6 @@ from pypdf import PdfReader
 from fastapi.responses import JSONResponse
 from typing import List
 
-
-
 app = FastAPI(debug=True)
 origins = [
     "http://localhost:5173",
@@ -43,6 +41,17 @@ async def extract_text_from_docx(path: str) -> str:
     doc = docx.Document(path)
     return "\n".join([para.text for para in doc.paragraphs if para.text.strip()])
 
+# --- HELPERS ---
+# Save uploaded file to a temporary location and return the path
+async def save_temp_location(cv_file):
+    with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{cv_file.filename}") as tmp:
+        contents = await cv_file.read()
+        tmp.write(contents)
+        file_path = tmp.name
+    return file_path
+
+# --- ENDPOINTS ---
+# Single CV analysis
 @app.post("/analyse-single-cv")
 async def analyse_cv(
     job_title: str = Form(...),
@@ -54,10 +63,7 @@ async def analyse_cv(
     job_description = "\n".join([job_data.job_title, job_data.job_description])
     
     # Save temporarily to process
-    with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{cv_file.filename}") as tmp:
-        contents = await cv_file.read()
-        tmp.write(contents)
-        file_path = tmp.name
+    file_path = await save_temp_location(cv_file)
 
     # Extract data
     if cv_file.filename.endswith(".pdf"):
@@ -66,7 +72,7 @@ async def analyse_cv(
         cv_text = await extract_text_from_docx(file_path)
     else:
         return "File extension not allowed. Upload a PDF or DOCX file"
-    
+        
     result = await agent_analyse_cv(cv_text=cv_text, job_desc=job_description)
     
     if isinstance(result, str):
@@ -84,6 +90,8 @@ async def analyse_cv(
     
     # return JSONResponse(content=[mock_response])
 
+# --- ENDPOINTS ---
+# Multiple CV analysis
 @app.post("/analyse-multiple-cvs")
 async def analyse_multiple_cvs(
     job_title: str = Form(...),
@@ -95,11 +103,26 @@ async def analyse_multiple_cvs(
 
     results = []
 
+    job_data = JobData(job_title=job_title, job_description=job_description)
+    job_description = "\n".join([job_data.job_title, job_data.job_description])
+
     # Process each CV concurrently for efficiency
     async def process_cv(file):
-        text = (await file.read()).decode('utf-8', errors='ignore')
-        analysis = await agent_analyse_cv(cv_text=text, job_desc=job_description)
+        # Save temporarily to process
+        file_path = await save_temp_location(file)
+
+        # Extract data
+        if file.filename.endswith(".pdf"):
+            cv_text = await extract_text_from_pdf(file_path)
+        elif file.filename.endswith(".docx"):
+            cv_text = await extract_text_from_docx(file_path)
+        else:
+            return "File extension not allowed. Upload a PDF or DOCX file"
+
+        analysis = await agent_analyse_cv(cv_text=cv_text, job_desc=job_description)
         parsed = json.loads(analysis) if isinstance(analysis, str) else analysis
+
+        print(f"Processed {file.filename}: {parsed}")
 
         return {
             "filename": file.filename,
@@ -118,7 +141,7 @@ async def analyse_multiple_cvs(
         reverse=True
     )
 
-    return {"results": sorted_results}
+    return JSONResponse(content=sorted_results)
 
     # mock_multiple_response = [
     #     {
