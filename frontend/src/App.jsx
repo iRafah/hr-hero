@@ -1,41 +1,78 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
+import './App.css'
+import api from './api.js'
+
 import { GiRobotHelmet } from "react-icons/gi";
 import { FaMagnifyingGlass } from "react-icons/fa6";
 
-import './App.css'
+// Components
 import FormGroup from './components/FormGroup.jsx'
 import FileUpload from './components/FileUpload.jsx'
 import CVAnalysisResults from './components/CVAnalysisResults.jsx'
 
 function App() {
-
   const [jobTitle, setJobTitle] = useState('');
   const [jobDescription, setJobDescription] = useState('');
-  const [allowSubmit, setAllowSubmit] = useState(false);
   const [files, setFiles] = useState([]);
-
-  // Dummy result for demonstration. In real application, this would come from backend after analysis.
-  const result_json = {
-    match_score: '90',
-    missing_skills: ["Docker", "GraphQL"],
-    reasoning:
-      "Your CV matches most of the job requirements. However, experience with Docker and GraphQL would strengthen your profile even more.",
-  };
+  const [isLoading, setIsLoading] = useState(false);
+  const [resultJson, setResultJson] = useState(null);
 
   const isFormValid = () => {
     return jobTitle.trim() !== '' && jobDescription.trim() !== '' && files.length > 0;
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
     if (!isFormValid()) {
       alert('Please fill in all required fields.');
-      //event.preventDefault();
       return;
     }
 
-    // Here we send data to your FastAPI backend.
+    let response;
+    // Send the data to the API.
+    try {
+      setResultJson(null);
+      setIsLoading(true);
 
-    alert('Form submitted! Check console for data.');
+      const formData = new FormData();
+      formData.append('job_title', jobTitle);
+      formData.append('job_description', jobDescription);
+
+      if (files.length > 1) {
+        files.forEach((file => formData.append('cv_files', file)));
+        response = await api.post('/analyse-multiple-cvs', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+      }
+      else {
+        formData.append('cv_file', files[0]);
+        response = await api.post('/analyse-single-cv', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+      }
+
+      console.log('Status:', response.status);
+      console.log('Response data:', response.data);
+      setResultJson(response.data);
+
+    } catch (err) {
+      if (err.response) {
+        console.error('POST failed with status:', err.response.status, err.response.statusText);
+      } else if (err.request) {
+        console.error('Network error: no response from server');
+      } else {
+        console.error('Request setup error:', err.message);
+      }
+    }
+    finally {
+      setIsLoading(false);
+    }
+
   };
 
   return (
@@ -52,7 +89,7 @@ function App() {
 
       <div className="flex items-center justify-center px-4 mt-15">
         <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-8 space-y-6">
-          <form className="space-y-5" action={handleSubmit}>
+          <form className="space-y-5" onSubmit={handleSubmit}>
             <div>
               {/* Job title */}
               <FormGroup>
@@ -88,28 +125,39 @@ function App() {
             </div>
 
             {/* File upload */}
-            <FileUpload onFilesSelected={setFiles} />
+            <FileUpload onFileSelect={setFiles} />
 
             {/* Submit */}
             <button
               type="submit"
-              className="w-full bg-green-600 text-white font-medium py-2.5 rounded-lg hover:bg-green-700 transition cursor-pointer"
-              disabled={allowSubmit}
+              className={`w-full text-white font-medium py-2.5 rounded-lg transition cursor-pointer flex items-center justify-center gap-2 ${isLoading
+                ? 'bg-green-400 cursor-not-allowed opacity-80'
+                : 'bg-green-600 hover:bg-green-700'
+                }`}
+              disabled={isLoading}
             >
-              Analyse CV
-              <FaMagnifyingGlass className="inline-block ml-2" />
+              {isLoading ? (
+                <>
+                  <LoadingIcon />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  Analyse CV
+                  <FaMagnifyingGlass className="inline-block ml-1" />
+                </>
+              )}
             </button>
           </form>
 
-
-          {!result_json ? (
-            <div className="text-green-800 text-bold flex items-center mt-5">Analyzing CV... <div className="loading-spinner ml-2"></div></div>
-          ) : result_json.match_score ? (
-            <CVAnalysisResults result={result_json} />
-          ) : (
-            <div className="text-gray-500 italic">
-              No results available yet.
-            </div>
+          {!isLoading && (
+            resultJson ? (
+              resultJson.map((result, index) => (
+                <CVAnalysisResults key={index} result={result} />
+              ))
+            ) : (
+              <div className="text-gray-500 italic">No results available yet.</div>
+            )
           )}
         </div>
       </div>
