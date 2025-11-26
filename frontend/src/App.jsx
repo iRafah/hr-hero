@@ -14,14 +14,15 @@ function App() {
   const [jobTitle, setJobTitle] = useState('');
   const [jobDescription, setJobDescription] = useState('');
   const [files, setFiles] = useState([]);
-  const [isAnalysing, setIsAnalysing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [resultJson, setResultJson] = useState(null);
 
   const isFormValid = () => {
     return jobTitle.trim() !== '' && jobDescription.trim() !== '' && files.length > 0;
   };
 
-  const handleSubmit = async event => {
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
     if (!isFormValid()) {
       alert('Please fill in all required fields.');
@@ -32,10 +33,7 @@ function App() {
     // Send the data to the API.
     try {
       setResultJson(null);
-      setIsAnalysing(true);
-
-      // slight delay to show analysing state
-      await new Promise((r) => setTimeout(r, 5000));
+      setIsLoading(true);
 
       const formData = new FormData();
       formData.append('job_title', jobTitle);
@@ -43,7 +41,6 @@ function App() {
 
       if (files.length > 1) {
         files.forEach((file => formData.append('cv_files', file)));
-
         response = await api.post('/analyse-multiple-cvs', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
@@ -52,7 +49,6 @@ function App() {
       }
       else {
         formData.append('cv_file', files[0]);
-
         response = await api.post('/analyse-single-cv', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
@@ -64,11 +60,6 @@ function App() {
       console.log('Response data:', response.data);
       setResultJson(response.data);
 
-      // setTimeout(() => {
-      //   setResultJson(response.data);
-      //   //setIsAnalysing(false);
-      // }, 3000); // simulate network delay
-
     } catch (err) {
       if (err.response) {
         console.error('POST failed with status:', err.response.status, err.response.statusText);
@@ -79,25 +70,8 @@ function App() {
       }
     }
     finally {
-      setIsAnalysing(false);
+      setIsLoading(false);
     }
-
-    // setIsAnalysing(true);
-    // setResultJson(null);
-
-    // const mockData = {
-    //   match_score: 95,
-    //   missing_skills: [],
-    //   reasoning:
-    //     "The candidate's CV fully aligns with the job description, demonstrating strong experience in all required areas.",
-    // };
-
-    // setTimeout(() => {
-    //   setResultJson(mockData);
-    //   setIsAnalysing(false);
-    // }, 3000); // simulate network delay
-
-    // return; // ⛔ prevent real API call
 
   };
 
@@ -115,7 +89,7 @@ function App() {
 
       <div className="flex items-center justify-center px-4 mt-15">
         <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-8 space-y-6">
-          <form className="space-y-5" action={handleSubmit}>
+          <form className="space-y-5" onSubmit={handleSubmit}>
             <div>
               {/* Job title */}
               <FormGroup>
@@ -156,34 +130,15 @@ function App() {
             {/* Submit */}
             <button
               type="submit"
-              className={`w-full text-white font-medium py-2.5 rounded-lg transition cursor-pointer flex items-center justify-center gap-2 ${isAnalysing
+              className={`w-full text-white font-medium py-2.5 rounded-lg transition cursor-pointer flex items-center justify-center gap-2 ${isLoading
                 ? 'bg-green-400 cursor-not-allowed opacity-80'
                 : 'bg-green-600 hover:bg-green-700'
                 }`}
-              disabled={isAnalysing}
+              disabled={isLoading}
             >
-              {isAnalysing ? (
+              {isLoading ? (
                 <>
-                  <svg
-                    className="animate-spin h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                    ></path>
-                  </svg>
+                  <LoadingIcon />
                   Analyzing...
                 </>
               ) : (
@@ -195,7 +150,7 @@ function App() {
             </button>
           </form>
 
-          {!isAnalysing && (
+          {!isLoading && (
             resultJson ? (
               resultJson.map((result, index) => (
                 <CVAnalysisResults key={index} result={result} />
