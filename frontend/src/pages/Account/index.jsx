@@ -1,50 +1,41 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import "./account.css";
-import SignInForm from "../../components/SignIn.jsx";
-import SignUpForm from "../../components/SignUp.jsx";
-import Navbar from "../../components/NavBar.jsx";
+import SignInForm from "../../features/auth/components/SignIn";
+import SignUpForm from "../../features/auth/components/SignUp";
+import { Navbar } from "../../components/layout/Navbar";
 
 export default function Account() {
     const [type, setType] = useState("signIn");
-    const handleOnClick = text => {
-        if (text !== type) {
-            setType(text);
-            return;
-        }
-    };
-    const containerClass =
-        "container " + (type === "signUp" ? "right-panel-active" : "");
+
+    const containerClass = "container " + (type === "signUp" ? "right-panel-active" : "");
+
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-slate-900">
             <Navbar />
 
-            <div className="account-page flex justify-center items-center flex-direction-column">
+            <div className="account-page flex justify-center items-center">
                 <div className={containerClass} id="container">
                     <SignUpForm />
                     <SignInForm />
 
-                    <div className="overlay-container md:block">
+                    <div className="overlay-container">
                         <div className="overlay">
-                            <div className="md:block overlay-panel overlay-left">
+                            <div className="overlay-panel overlay-left">
                                 <h1 className="text-3xl">Welcome Back!</h1>
-                                <p>
-                                    To keep connected with us please login with your personal info
-                                </p>
+                                <p>To keep connected with us please login with your personal info</p>
                                 <button
                                     className="ghost"
-                                    id="signIn"
-                                    onClick={() => handleOnClick("signIn")}
+                                    onClick={() => setType("signIn")}
                                 >
                                     Sign In
                                 </button>
                             </div>
-                            <div className="md:block overlay-panel overlay-right">
+                            <div className="overlay-panel overlay-right">
                                 <h1 className="text-3xl">Hello!</h1>
-                                <p>Enter your personal details and start using your AI CV Screening </p>
+                                <p>Enter your personal details and start using AI CV Screening</p>
                                 <button
-                                    className="ghost "
-                                    id="signUp"
-                                    onClick={() => handleOnClick("signUp")}
+                                    className="ghost"
+                                    onClick={() => setType("signUp")}
                                 >
                                     Sign Up
                                 </button>

@@ -1,159 +1,106 @@
-import { useState } from 'react';
-import './../App.css';
-import api from './../api.js';
+import { useState } from "react";
+import { Search } from "lucide-react";
 
-import { GiRobotHelmet } from "react-icons/gi";
-import { FaMagnifyingGlass } from "react-icons/fa6";
+import { Navbar } from "../components/layout/Navbar";
+import { Button } from "../components/ui/Button";
+import { FileUpload } from "../features/analysis/components/FileUpload";
+import { CVAnalysisResults } from "../features/analysis/components/CVAnalysisResults";
+import { useAnalysis } from "../features/analysis/hooks/useAnalysis";
+import LoadingIcon from "../components/LoadingIcon";
 
-// Components
-import FormGroup from './../components/FormGroup.jsx';
-import FileUpload from './../components/FileUpload.jsx';
-import CVAnalysisResults from './../components/CVAnalysisResults.jsx';
-import Navbar from '../components/Navbar.jsx';
-
-export default function Dashboard() {
-    const [jobTitle, setJobTitle] = useState('');
-    const [jobDescription, setJobDescription] = useState('');
+export default function Analyse() {
+    const [jobTitle, setJobTitle] = useState("");
+    const [jobDescription, setJobDescription] = useState("");
     const [files, setFiles] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [resultJson, setResultJson] = useState(null);
+    const { isLoading, results, error, runAnalysis } = useAnalysis();
 
-    const isFormValid = () => {
-        return jobTitle.trim() !== '' && jobDescription.trim() !== '' && files.length > 0;
-    };
+    const isValid = jobTitle.trim() && jobDescription.trim() && files.length > 0;
 
-    const handleSubmit = async (event) => {
-        event.preventDefault();
-
-        if (!isFormValid()) {
-            alert('Please fill in all required fields.');
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!isValid) {
+            alert("Please fill in all required fields.");
             return;
         }
-
-        let response;
-        // Send the data to the API.
-        try {
-            setResultJson(null);
-            setIsLoading(true);
-
-            const formData = new FormData();
-            formData.append('job_title', jobTitle);
-            formData.append('job_description', jobDescription);
-
-            if (files.length > 1) {
-                files.forEach((file => formData.append('cv_files', file)));
-                response = await api.post('/analyse-multiple-cvs', formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
-                    },
-                });
-            }
-            else {
-                formData.append('cv_file', files[0]);
-                response = await api.post('/analyse-single-cv', formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
-                    },
-                });
-            }
-
-            console.log('Status:', response.status);
-            console.log('Response data:', response.data);
-            setResultJson(response.data);
-
-        } catch (err) {
-            if (err.response) {
-                console.error('POST failed with status:', err.response.status, err.response.statusText);
-            } else if (err.request) {
-                console.error('Network error: no response from server');
-            } else {
-                console.error('Request setup error:', err.message);
-            }
-        }
-        finally {
-            setIsLoading(false);
-        }
-
+        await runAnalysis({ jobTitle, jobDescription, files });
     };
 
     return (
-        <main className="min-h-screen bg-">
+        <main className="min-h-screen bg-slate-900">
             <Navbar />
 
-            <div className="flex items-center justify-center px-4 mt-15">
-                <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-8 space-y-6">
+            <div className="flex items-start justify-center px-4 py-10">
+                <div className="w-full max-w-2xl bg-slate-800 rounded-2xl shadow-lg border border-slate-700 p-8 space-y-6">
+                    <h1 className="text-xl font-semibold text-slate-100">CV Analysis</h1>
+
                     <form className="space-y-5" onSubmit={handleSubmit}>
                         <div>
-                            {/* Job title */}
-                            <FormGroup>
-                                <label className="block text-md font-medium text-gray-700 my-1" htmlFor="jobTitle" >
-                                    Job title
-                                </label>
-                                <input
-                                    type="text"
-                                    id="jobTitle"
-                                    placeholder="e.g., Full-Stack Developer"
-                                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700"
-                                    value={jobTitle}
-                                    onChange={(e) => setJobTitle(e.target.value)}
-                                />
-                            </FormGroup>
+                            <label
+                                className="block text-sm font-medium text-slate-300 mb-1"
+                                htmlFor="jobTitle"
+                            >
+                                Job Title
+                            </label>
+                            <input
+                                id="jobTitle"
+                                type="text"
+                                placeholder="e.g., Full-Stack Developer"
+                                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                value={jobTitle}
+                                onChange={(e) => setJobTitle(e.target.value)}
+                            />
                         </div>
 
-                        {/* Job description */}
                         <div>
-                            <FormGroup>
-                                <label className="block text-md font-medium text-gray-700 my-1" htmlFor="jobDescription">
-                                    Job description
-                                </label>
-                                <textarea
-                                    id="jobDescription"
-                                    placeholder="Paste the job description here"
-                                    rows="5"
-                                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700"
-                                    value={jobDescription}
-                                    onChange={(e) => setJobDescription(e.target.value)}
-                                ></textarea>
-                            </FormGroup>
+                            <label
+                                className="block text-sm font-medium text-slate-300 mb-1"
+                                htmlFor="jobDescription"
+                            >
+                                Job Description
+                            </label>
+                            <textarea
+                                id="jobDescription"
+                                rows={5}
+                                placeholder="Paste the job description here"
+                                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
+                                value={jobDescription}
+                                onChange={(e) => setJobDescription(e.target.value)}
+                            />
                         </div>
 
-                        {/* File upload */}
                         <FileUpload onFileSelect={setFiles} />
 
-                        {/* Submit */}
-                        <button
+                        <Button
                             type="submit"
-                            className={`w-full text-white font-medium py-2.5 rounded-lg transition cursor-pointer flex items-center justify-center gap-2 ${isLoading
-                                ? 'bg-green-400 cursor-not-allowed opacity-80'
-                                : 'bg-green-600 hover:bg-green-700'
-                                }`}
+                            variant={isLoading ? "secondary" : "success"}
+                            size="full"
                             disabled={isLoading}
                         >
                             {isLoading ? (
-                                <>
-                                    <LoadingIcon />
-                                    Analyzing...
-                                </>
+                                <><LoadingIcon /> Analyzing...</>
                             ) : (
-                                <>
-                                    Analyse CV
-                                    <FaMagnifyingGlass className="inline-block ml-1" />
-                                </>
+                                <>Analyse CV <Search size={16} /></>
                             )}
-                        </button>
+                        </Button>
                     </form>
 
-                    {!isLoading && (
-                        resultJson ? (
-                            resultJson.map((result, index) => (
-                                <CVAnalysisResults key={index} result={result} />
-                            ))
-                        ) : (
-                            <div className="text-gray-500 italic">No results available yet.</div>
-                        )
+                    {error && (
+                        <div className="bg-red-900/30 border border-red-700 text-red-400 rounded-lg px-4 py-3 text-sm">
+                            {error}
+                        </div>
+                    )}
+
+                    {!isLoading && results && results.map((result, i) => (
+                        <CVAnalysisResults key={i} result={result} />
+                    ))}
+
+                    {!isLoading && !results && !error && (
+                        <p className="text-slate-500 italic text-sm text-center py-4">
+                            No results yet. Upload a CV to get started.
+                        </p>
                     )}
                 </div>
             </div>
         </main>
-    )
+    );
 }
