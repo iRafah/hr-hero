@@ -9,7 +9,7 @@ This is a SaaS application that allows recruiters to:
 Tech stack:
 - Backend: FastAPI (Python)
 - Frontend: React (Vite + Tailwind)
-- AI: OpenAI (via openai_utils)
+- AI: OpenAI 
 - Database: PostgreSQL 
 
 ---
@@ -128,6 +128,10 @@ Example:
 - Avoid duplicate Tailwind classes
 
 ---
+
+## Language
+- Keep all the UI labelling in Portuguese (Brazil) 
+- The project will access other languages later, but for now, the focus is the Brazilian market
 
 ## Icons
 

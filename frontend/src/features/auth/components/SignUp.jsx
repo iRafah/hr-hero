@@ -1,34 +1,53 @@
 import { useState } from "react";
+import { registerUser } from "../../../services/authApi";
 
 function SignUpForm() {
-    const [state, setState] = useState({ name: "", email: "", password: "" });
+    const [state, setState] = useState({ full_name: "", email: "", password: "" });
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleChange = (e) => {
         setState({ ...state, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        alert(`You are signing up with name: ${state.name}, email: ${state.email}`);
-        setState({ name: "", email: "", password: "" });
+        if (state.password.length < 8) {
+            setError("A senha deve ter pelo menos 8 caracteres");
+            return;
+        }
+        setError("");
+        setSuccess("");
+        setIsLoading(true);
+        try {
+            await registerUser(state);
+            setSuccess("Conta criada! Verifique seu email para ativar sua conta.");
+            setState({ full_name: "", email: "", password: "" });
+        } catch (err) {
+            setError(err.response?.data?.detail || "Erro ao criar conta. Tente novamente.");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
         <div className="form-container sign-up-container">
             <form onSubmit={handleSubmit}>
-                <h1 className="text-3xl">Create Account</h1>
+                <h1>Criar Conta</h1>
                 <div className="social-container">
                     <a href="#" className="social"><i className="fab fa-facebook-f" /></a>
                     <a href="#" className="social"><i className="fab fa-google-plus-g" /></a>
                     <a href="#" className="social"><i className="fab fa-linkedin-in" /></a>
                 </div>
-                <span>or use your email for registration</span>
+                <span>ou use seu email para se registrar</span>
                 <input
                     type="text"
-                    name="name"
-                    placeholder="Name"
-                    value={state.name}
+                    name="full_name"
+                    placeholder="Nome completo"
+                    value={state.full_name}
                     onChange={handleChange}
+                    required
                 />
                 <input
                     type="email"
@@ -36,15 +55,25 @@ function SignUpForm() {
                     placeholder="Email"
                     value={state.email}
                     onChange={handleChange}
+                    required
                 />
                 <input
                     type="password"
                     name="password"
-                    placeholder="Password"
+                    placeholder="Senha (mín. 8 caracteres)"
                     value={state.password}
                     onChange={handleChange}
+                    required
                 />
-                <button type="submit">Sign Up</button>
+                {error && (
+                    <p style={{ color: "#f87171", fontSize: "12px", margin: "4px 0" }}>{error}</p>
+                )}
+                {success && (
+                    <p style={{ color: "#34d399", fontSize: "12px", margin: "4px 0" }}>{success}</p>
+                )}
+                <button type="submit" disabled={isLoading}>
+                    {isLoading ? "Criando..." : "Cadastrar"}
+                </button>
             </form>
         </div>
     );

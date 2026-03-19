@@ -10,6 +10,7 @@ const button = tv({
             ghost: "bg-transparent hover:bg-slate-700 text-slate-300",
             success: "bg-green-600 hover:bg-green-700 text-white",
             danger: "bg-red-600 hover:bg-red-700 text-white",
+            indigo: "bg-indigo-600 hover:bg-indigo-700 text-white",
         },
         size: {
             sm: "px-3 py-1.5 text-sm",
