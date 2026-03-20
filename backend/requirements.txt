@@ -1,8 +1,20 @@
 fastapi
 uvicorn
-pydantic
+pydantic[email]
 python-dotenv
 openai
 tiktoken
 python-docx
 pypdf
+
+# Auth
+python-jose[cryptography]
+passlib[bcrypt]
+
+# Database
+sqlalchemy[asyncio]
+asyncpg
+alembic
+
+# Email
+fastapi-mail
