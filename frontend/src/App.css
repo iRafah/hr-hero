@@ -1,12 +1,26 @@
 @import "tailwindcss";
 
+@theme {
+    --color-brand-primary:  #2D7FF9;
+    --color-brand-violet:   #6C63FF;
+    --color-brand-teal:     #00B8A9;
+    --color-brand-dark:     #1E1E2F;
+    --color-brand-surface:  #252538;
+    --color-brand-elevated: #2E2E4A;
+    --color-brand-border:   #32324E;
+    --color-brand-muted:    #A8AAB2;
+    --color-brand-success:  #00B894;
+    --color-brand-warning:  #FDCB6E;
+    --color-brand-error:    #E84343;
+}
+
 body {
     margin: 0;
-    background-color: #0f172a;
+    background-color: #1E1E2F;
     color: #f1f5f9;
 }
 
 /* Legacy header rule — overridden by Navbar component */
 header {
-    background-color: #020617;
+    background-color: #1E1E2F;
 }

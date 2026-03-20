@@ -5,10 +5,10 @@ const badge = tv({
     base: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
     variants: {
         variant: {
-            success: "bg-green-900/50 text-green-400 border border-green-700",
-            danger: "bg-red-900/50 text-red-400 border border-red-700",
-            info: "bg-blue-900/50 text-blue-400 border border-blue-700",
-            neutral: "bg-slate-700 text-slate-300",
+            success: "bg-brand-success/15 text-brand-success border border-brand-success/40",
+            danger: "bg-brand-error/15 text-brand-error border border-brand-error/40",
+            info: "bg-brand-primary/15 text-brand-primary border border-brand-primary/40",
+            neutral: "bg-brand-elevated text-brand-muted",
         },
     },
     defaultVariants: { variant: "neutral" },

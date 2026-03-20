@@ -5,12 +5,12 @@ const button = tv({
     base: "inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed",
     variants: {
         variant: {
-            primary: "bg-blue-600 hover:bg-blue-700 text-white",
-            secondary: "bg-slate-700 hover:bg-slate-600 text-slate-100 border border-slate-600",
-            ghost: "bg-transparent hover:bg-slate-700 text-slate-300",
-            success: "bg-green-600 hover:bg-green-700 text-white",
-            danger: "bg-red-600 hover:bg-red-700 text-white",
-            indigo: "bg-indigo-600 hover:bg-indigo-700 text-white",
+            primary: "bg-brand-primary hover:bg-[#1A6FE8] text-white",
+            secondary: "bg-brand-surface hover:bg-brand-elevated text-slate-100 border border-brand-border",
+            ghost: "bg-transparent hover:bg-brand-surface text-brand-muted",
+            success: "bg-brand-success hover:bg-[#00A583] text-white",
+            danger: "bg-brand-error hover:bg-[#CC3333] text-white",
+            indigo: "bg-brand-violet hover:bg-[#5B52EF] text-white",
         },
         size: {
             sm: "px-3 py-1.5 text-sm",

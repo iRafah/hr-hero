@@ -39,21 +39,20 @@ export function Sidebar({ isOpen, onClose }) {
 
             <aside
                 className={cn(
-                    "fixed top-0 left-0 h-screen w-60 bg-slate-950 border-r border-slate-800 flex flex-col z-40 transition-transform duration-200",
-                    // Mobile: translate off-screen when closed
+                    "fixed top-0 left-0 h-screen w-60 bg-brand-dark border-r border-brand-border flex flex-col z-40 transition-transform duration-200",
                     "md:translate-x-0",
                     isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
                 )}
             >
                 {/* Logo */}
-                <div className="px-6 py-5 border-b border-slate-800 flex items-center justify-between">
+                <div className="px-6 py-5 border-b border-brand-border flex items-center justify-between">
                     <Link to="/" className="text-lg font-bold text-white flex items-center gap-2" onClick={handleNavClick}>
-                        HR Hero <GiRobotHelmet className="text-indigo-400" />
+                        HR Hero <GiRobotHelmet className="text-brand-violet" />
                     </Link>
                     {/* Close button — mobile only */}
                     <button
                         onClick={onClose}
-                        className="md:hidden text-slate-400 hover:text-white p-1"
+                        className="md:hidden text-brand-muted hover:text-white p-1"
                     >
                         <X size={18} />
                     </button>
@@ -71,8 +70,8 @@ export function Sidebar({ isOpen, onClose }) {
                                 className={cn(
                                     "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                                     isActive
-                                        ? "bg-indigo-600 text-white"
-                                        : "text-slate-400 hover:text-white hover:bg-slate-800",
+                                        ? "bg-brand-violet text-white"
+                                        : "text-brand-muted hover:text-white hover:bg-brand-surface",
                                     disabled && "opacity-40 pointer-events-none"
                                 )}
                             >
@@ -84,16 +83,16 @@ export function Sidebar({ isOpen, onClose }) {
                 </nav>
 
                 {/* Bottom */}
-                <div className="px-3 py-4 border-t border-slate-800 space-y-2">
+                <div className="px-3 py-4 border-t border-brand-border space-y-2">
                     {user && (
-                        <div className="px-3 py-2.5 rounded-lg bg-indigo-950/50 border border-indigo-900/60">
-                            <p className="text-xs text-indigo-400 font-medium">Plano Gratuito</p>
-                            <p className="text-xs text-slate-500 mt-0.5 truncate">{user.email}</p>
+                        <div className="px-3 py-2.5 rounded-lg bg-brand-violet/10 border border-brand-violet/30">
+                            <p className="text-xs text-brand-violet font-medium">Plano Gratuito</p>
+                            <p className="text-xs text-brand-muted mt-0.5 truncate">{user.email}</p>
                         </div>
                     )}
                     <button
                         onClick={handleLogout}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-colors w-full"
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-brand-muted hover:text-white hover:bg-brand-surface transition-colors w-full"
                     >
                         <LogOut size={18} />
                         Sair

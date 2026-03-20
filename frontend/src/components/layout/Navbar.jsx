@@ -15,11 +15,11 @@ export function Navbar() {
     const location = useLocation();
 
     return (
-        <header className="sticky top-0 z-50 bg-slate-950 border-b border-slate-800">
+        <header className="sticky top-0 z-50 bg-brand-dark border-b border-brand-border">
             <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="flex h-16 items-center justify-between">
                     <Link to="/" className="text-xl font-bold text-white flex items-center gap-2">
-                        HR Hero <GiRobotHelmet className="text-blue-400" />
+                        HR Hero <GiRobotHelmet className="text-brand-primary" />
                     </Link>
 
                     <div className="hidden md:flex items-center gap-6">
@@ -31,7 +31,7 @@ export function Navbar() {
                                     "text-sm font-medium transition-colors",
                                     location.pathname === path
                                         ? "text-white"
-                                        : "text-slate-400 hover:text-white"
+                                        : "text-brand-muted hover:text-white"
                                 )}
                             >
                                 {label}
@@ -41,7 +41,7 @@ export function Navbar() {
 
                     <button
                         onClick={() => setMobileOpen(!mobileOpen)}
-                        className="md:hidden text-slate-400 hover:text-white p-2"
+                        className="md:hidden text-brand-muted hover:text-white p-2"
                     >
                         {mobileOpen ? <X size={20} /> : <Menu size={20} />}
                     </button>
@@ -49,7 +49,7 @@ export function Navbar() {
             </nav>
 
             {mobileOpen && (
-                <div className="md:hidden bg-slate-900 border-t border-slate-800 px-4 py-3 space-y-1">
+                <div className="md:hidden bg-brand-surface border-t border-brand-border px-4 py-3 space-y-1">
                     {NAV_ITEMS.map(({ label, path }) => (
                         <Link
                             key={label}
@@ -58,8 +58,8 @@ export function Navbar() {
                             className={cn(
                                 "block px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                                 location.pathname === path
-                                    ? "bg-slate-700 text-white"
-                                    : "text-slate-400 hover:text-white hover:bg-slate-800"
+                                    ? "bg-brand-elevated text-white"
+                                    : "text-brand-muted hover:text-white hover:bg-brand-surface"
                             )}
                         >
                             {label}
