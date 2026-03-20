@@ -48,6 +48,17 @@ class UserCreate(BaseModel):
         return value.strip()
 
 
+class UserUpdate(BaseModel):
+    full_name: str
+
+    @field_validator("full_name")
+    @classmethod
+    def validate_full_name(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Nome completo não pode ser vazio")
+        return value.strip()
+
+
 class UserLogin(BaseModel):
     email: EmailStr
     password: str

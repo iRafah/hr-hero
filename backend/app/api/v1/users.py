@@ -13,6 +13,7 @@ from app.models.schemas import (
     ProfileResponse,
     ProfileUpdate,
     UserResponse,
+    UserUpdate,
     UserWithProfileResponse,
 )
 from app.models.user import User
@@ -23,6 +24,7 @@ from app.services.profile_service import (
     delete_experience,
     get_profile,
     update_profile,
+    update_user,
 )
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -45,6 +47,19 @@ async def get_me(
         "profile": profile,
     }
     return user_dict
+
+
+@router.patch("/me", response_model=UserResponse)
+async def update_me(
+    data: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        user = await update_user(db, current_user.id, data)
+    except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error))
+    return user
 
 
 @router.get("/me/profile", response_model=ProfileResponse)

@@ -21,10 +21,10 @@ export default function Analyse() {
     };
 
     return (
-        <div className="px-6 py-8 max-w-3xl space-y-6">
+        <div className="px-4 sm:px-6 py-6 sm:py-8 w-full max-w-3xl space-y-6">
             <h1 className="text-2xl font-bold text-slate-100">Análise de CV</h1>
 
-            <div className="bg-slate-800 rounded-2xl border border-slate-700 p-8 space-y-6">
+            <div className="bg-slate-800 rounded-2xl border border-slate-700 p-4 sm:p-8 space-y-6">
                 <form className="space-y-5" onSubmit={handleSubmit}>
                     <div>
                         <label className="block text-sm font-medium text-slate-300 mb-1" htmlFor="jobTitle">

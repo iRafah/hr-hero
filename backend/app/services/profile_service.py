@@ -4,8 +4,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.schemas import EducationCreate, ExperienceCreate, ProfileUpdate
-from app.models.user import UserEducation, UserExperience, UserProfile
+from app.models.schemas import EducationCreate, ExperienceCreate, ProfileUpdate, UserUpdate
+from app.models.user import User, UserEducation, UserExperience, UserProfile
 
 
 async def get_profile(db: AsyncSession, user_id: UUID) -> UserProfile | None:
@@ -83,6 +83,18 @@ async def add_education(
     await db.commit()
     await db.refresh(education)
     return education
+
+
+async def update_user(db: AsyncSession, user_id: UUID, data: UserUpdate) -> User:
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise ValueError("Usuário não encontrado")
+
+    user.full_name = data.full_name
+    await db.commit()
+    await db.refresh(user)
+    return user
 
 
 async def delete_education(

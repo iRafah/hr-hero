@@ -12,7 +12,14 @@ import {
     deleteExperience,
     getMyProfile,
     updateMyProfile,
+    updateMyUser,
 } from "../services/profileApi";
+
+function formatDate(dateStr) {
+    if (!dateStr) return null;
+    const [year, month, day] = dateStr.split("-");
+    return `${day}/${month}/${year}`;
+}
 
 const SENIORITY_OPTIONS = [
     { value: "", label: "Selecione..." },
@@ -52,7 +59,7 @@ function ExperienceModal({ isOpen, onClose, onSave }) {
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Adicionar Experiência">
             <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label className={labelClass}>Empresa *</label>
                         <input className={inputClass} required value={form.company}
@@ -64,7 +71,7 @@ function ExperienceModal({ isOpen, onClose, onSave }) {
                             onChange={(e) => setForm({ ...form, position: e.target.value })} />
                     </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label className={labelClass}>Data de Início *</label>
                         <input type="date" className={inputClass} required value={form.start_date}
@@ -129,7 +136,7 @@ function EducationModal({ isOpen, onClose, onSave }) {
                     <input className={inputClass} required value={form.institution}
                         onChange={(e) => setForm({ ...form, institution: e.target.value })} />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label className={labelClass}>Grau *</label>
                         <input className={inputClass} placeholder="ex: Bacharelado" required value={form.degree}
@@ -141,7 +148,7 @@ function EducationModal({ isOpen, onClose, onSave }) {
                             onChange={(e) => setForm({ ...form, field_of_study: e.target.value })} />
                     </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label className={labelClass}>Data de Início *</label>
                         <input type="date" className={inputClass} required value={form.start_date}
@@ -182,6 +189,7 @@ export default function Profile() {
     const [eduModal, setEduModal] = useState(false);
 
     const [form, setForm] = useState({
+        full_name: "",
         title: "", location: "", contact_email: "", phone: "",
         linkedin_url: "", github_url: "", portfolio_url: "",
         seniority: "", years_experience: "", current_position: "", current_company: "",
@@ -193,6 +201,7 @@ export default function Profile() {
             .then((data) => {
                 setProfile(data);
                 setForm({
+                    full_name: user?.full_name || "",
                     title: data.title || "",
                     location: data.location || "",
                     contact_email: data.contact_email || "",
@@ -220,11 +229,15 @@ export default function Profile() {
         setIsSaving(true);
         setSaveSuccess(false);
         try {
-            const updated = await updateMyProfile({
-                ...form,
-                years_experience: form.years_experience !== "" ? Number(form.years_experience) : null,
-                seniority: form.seniority || null,
-            });
+            const { full_name, ...profileFields } = form;
+            const [updated] = await Promise.all([
+                updateMyProfile({
+                    ...profileFields,
+                    years_experience: profileFields.years_experience !== "" ? Number(profileFields.years_experience) : null,
+                    seniority: profileFields.seniority || null,
+                }),
+                full_name.trim() !== (user?.full_name || "") && updateMyUser({ full_name }),
+            ]);
             setProfile(updated);
             setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 3000);
@@ -262,18 +275,18 @@ export default function Profile() {
     }
 
     return (
-        <div className="px-6 py-8 max-w-5xl space-y-6">
+        <div className="px-4 sm:px-6 py-6 sm:py-8 w-full space-y-6">
             <h1 className="text-2xl font-bold text-slate-100">Perfil</h1>
 
             <form onSubmit={handleSave} className="space-y-6">
                 {/* Informações Pessoais */}
-                <Card className="p-6 space-y-5">
+                <Card className="p-4 sm:p-6 space-y-5">
                     <h2 className="text-base font-semibold text-slate-100">Informações Pessoais</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className={labelClass}>Nome Completo <span className="text-red-400">*</span></label>
-                            <input className={inputClass} value={user?.full_name || ""} readOnly
-                                style={{ opacity: 0.7, cursor: "not-allowed" }} />
+                            <input className={inputClass} value={form.full_name}
+                                onChange={handleField("full_name")} />
                         </div>
                         <div>
                             <label className={labelClass}>Título</label>
@@ -314,7 +327,7 @@ export default function Profile() {
                 </Card>
 
                 {/* Dados Profissionais */}
-                <Card className="p-6 space-y-5">
+                <Card className="p-4 sm:p-6 space-y-5">
                     <h2 className="text-base font-semibold text-slate-100">Dados Profissionais</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -344,7 +357,7 @@ export default function Profile() {
                 </Card>
 
                 {/* Skills */}
-                <Card className="p-6 space-y-4">
+                <Card className="p-4 sm:p-6 space-y-4">
                     <h2 className="text-base font-semibold text-slate-100">Skills</h2>
                     <div>
                         <label className={labelClass}>Skills técnicas</label>
@@ -372,6 +385,77 @@ export default function Profile() {
                     </div>
                 </Card>
 
+                {/* Experiências */}
+                <Card className="p-4 sm:p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-base font-semibold text-slate-100">Experiências</h2>
+                        <Button type="button" variant="secondary" size="sm" onClick={() => setExpModal(true)}>
+                            <Plus size={15} /> Adicionar
+                        </Button>
+                    </div>
+                    {profile?.experiences?.length > 0 ? (
+                        <div className="space-y-3">
+                            {profile.experiences.map((exp) => (
+                                <div key={exp.id} className="flex items-start justify-between bg-slate-700/40 border border-slate-700 rounded-xl p-4">
+                                    <div>
+                                        <p className="text-slate-100 font-medium text-sm">{exp.position}</p>
+                                        <p className="text-slate-400 text-sm">{exp.company}</p>
+                                        <p className="text-slate-500 text-xs mt-1">
+                                            {formatDate(exp.start_date)} → {exp.is_current ? "Atual" : formatDate(exp.end_date) || "—"}
+                                        </p>
+                                        {exp.description && (
+                                            <p className="text-slate-400 text-xs mt-1 leading-relaxed">{exp.description}</p>
+                                        )}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleDeleteExperience(exp.id)}
+                                        className="text-slate-500 hover:text-red-400 transition-colors ml-4 shrink-0"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-slate-500 text-sm">Nenhuma experiência adicionada.</p>
+                    )}
+                </Card>
+
+                {/* Educação */}
+                <Card className="p-4 sm:p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-base font-semibold text-slate-100">Educação</h2>
+                        <Button type="button" variant="secondary" size="sm" onClick={() => setEduModal(true)}>
+                            <Plus size={15} /> Adicionar
+                        </Button>
+                    </div>
+                    {profile?.education?.length > 0 ? (
+                        <div className="space-y-3">
+                            {profile.education.map((edu) => (
+                                <div key={edu.id} className="flex items-start justify-between bg-slate-700/40 border border-slate-700 rounded-xl p-4">
+                                    <div>
+                                        <p className="text-slate-100 font-medium text-sm">{edu.degree}{edu.field_of_study ? ` em ${edu.field_of_study}` : ""}</p>
+                                        <p className="text-slate-400 text-sm">{edu.institution}</p>
+                                        <p className="text-slate-500 text-xs mt-1">
+                                            {formatDate(edu.start_date)} → {formatDate(edu.end_date) || "Em andamento"}
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleDeleteEducation(edu.id)}
+                                        className="text-slate-500 hover:text-red-400 transition-colors ml-4 shrink-0"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-slate-500 text-sm">Nenhuma educação adicionada.</p>
+                    )}
+                </Card>
+
                 <div className="flex items-center gap-4">
                     <Button type="submit" variant="indigo" size="lg" disabled={isSaving}>
                         {isSaving ? "Salvando..." : "Salvar Perfil"}
@@ -381,75 +465,6 @@ export default function Profile() {
                     )}
                 </div>
             </form>
-
-            {/* Experiências */}
-            <Card className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-base font-semibold text-slate-100">Experiências</h2>
-                    <Button type="button" variant="secondary" size="sm" onClick={() => setExpModal(true)}>
-                        <Plus size={15} /> Adicionar
-                    </Button>
-                </div>
-                {profile?.experiences?.length > 0 ? (
-                    <div className="space-y-3">
-                        {profile.experiences.map((exp) => (
-                            <div key={exp.id} className="flex items-start justify-between bg-slate-700/40 border border-slate-700 rounded-xl p-4">
-                                <div>
-                                    <p className="text-slate-100 font-medium text-sm">{exp.position}</p>
-                                    <p className="text-slate-400 text-sm">{exp.company}</p>
-                                    <p className="text-slate-500 text-xs mt-1">
-                                        {exp.start_date} → {exp.is_current ? "Atual" : exp.end_date || "—"}
-                                    </p>
-                                    {exp.description && (
-                                        <p className="text-slate-400 text-xs mt-1 leading-relaxed">{exp.description}</p>
-                                    )}
-                                </div>
-                                <button
-                                    onClick={() => handleDeleteExperience(exp.id)}
-                                    className="text-slate-500 hover:text-red-400 transition-colors ml-4 flex-shrink-0"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <p className="text-slate-500 text-sm">Nenhuma experiência adicionada.</p>
-                )}
-            </Card>
-
-            {/* Educação */}
-            <Card className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-base font-semibold text-slate-100">Educação</h2>
-                    <Button type="button" variant="secondary" size="sm" onClick={() => setEduModal(true)}>
-                        <Plus size={15} /> Adicionar
-                    </Button>
-                </div>
-                {profile?.education?.length > 0 ? (
-                    <div className="space-y-3">
-                        {profile.education.map((edu) => (
-                            <div key={edu.id} className="flex items-start justify-between bg-slate-700/40 border border-slate-700 rounded-xl p-4">
-                                <div>
-                                    <p className="text-slate-100 font-medium text-sm">{edu.degree}{edu.field_of_study ? ` em ${edu.field_of_study}` : ""}</p>
-                                    <p className="text-slate-400 text-sm">{edu.institution}</p>
-                                    <p className="text-slate-500 text-xs mt-1">
-                                        {edu.start_date} → {edu.end_date || "Em andamento"}
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={() => handleDeleteEducation(edu.id)}
-                                    className="text-slate-500 hover:text-red-400 transition-colors ml-4 flex-shrink-0"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <p className="text-slate-500 text-sm">Nenhuma educação adicionada.</p>
-                )}
-            </Card>
 
             <ExperienceModal isOpen={expModal} onClose={() => setExpModal(false)} onSave={handleAddExperience} />
             <EducationModal isOpen={eduModal} onClose={() => setEduModal(false)} onSave={handleAddEducation} />
