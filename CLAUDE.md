@@ -186,6 +186,7 @@ createJob()
 - Max width: 1200px
 - Use consistent padding (px-4 md:px-8)
 - Use spacing scale (space-y-4, space-y-6)
+- 
 
 ---
 

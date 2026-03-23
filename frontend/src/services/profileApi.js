@@ -5,6 +5,7 @@ export async function updateMyUser(userData) {
     return response.data;
 }
 
+// Legacy generic profile (kept for experiences/education endpoints)
 export async function getMyProfile() {
     const response = await api.get("/api/v1/users/me/profile");
     return response.data;
@@ -12,6 +13,28 @@ export async function getMyProfile() {
 
 export async function updateMyProfile(profileData) {
     const response = await api.put("/api/v1/users/me/profile", profileData);
+    return response.data;
+}
+
+// Candidate profile (role: user)
+export async function getCandidateProfile() {
+    const response = await api.get("/api/v1/candidate-profiles/me");
+    return response.data;
+}
+
+export async function updateCandidateProfile(profileData) {
+    const response = await api.put("/api/v1/candidate-profiles/me", profileData);
+    return response.data;
+}
+
+// Recruiter profile (role: recruiter)
+export async function getRecruiterProfile() {
+    const response = await api.get("/api/v1/recruiter-profiles/me");
+    return response.data;
+}
+
+export async function updateRecruiterProfile(profileData) {
+    const response = await api.put("/api/v1/recruiter-profiles/me", profileData);
     return response.data;
 }
 
