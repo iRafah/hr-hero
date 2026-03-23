@@ -17,14 +17,12 @@ from app.models.schemas import (
     UserWithProfileResponse,
 )
 from app.models.user import User
-from app.services.profile_service import (
+from app.services.profile_service import get_profile, update_profile, update_user
+from app.services.candidate_profile_service import (
     add_education,
     add_experience,
     delete_education,
     delete_experience,
-    get_profile,
-    update_profile,
-    update_user,
 )
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -96,6 +94,8 @@ async def create_experience(
         experience = await add_experience(db, current_user.id, data)
     except ValueError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error))
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Erro ao salvar experiência")
     return experience
 
 
@@ -109,6 +109,8 @@ async def remove_experience(
         await delete_experience(db, current_user.id, experience_id)
     except ValueError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error))
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Erro ao remover experiência")
 
 
 @router.post("/me/education", response_model=EducationResponse, status_code=status.HTTP_201_CREATED)
@@ -121,6 +123,8 @@ async def create_education(
         education = await add_education(db, current_user.id, data)
     except ValueError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error))
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Erro ao salvar educação")
     return education
 
 
@@ -134,3 +138,5 @@ async def remove_education(
         await delete_education(db, current_user.id, education_id)
     except ValueError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error))
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Erro ao remover educação")
