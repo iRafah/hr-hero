@@ -11,6 +11,7 @@ import VerifyEmail from "./pages/VerifyEmail";
 import Dashboard from "./pages/Dashboard";
 import Analyse from "./pages/Analyse";
 import Profile from "./pages/Profile";
+import Subscribe from "./pages/Subscribe";
 
 function App() {
     return (
@@ -43,6 +44,14 @@ function App() {
                     element={
                         <ProtectedRoute>
                             <AuthLayout><Profile /></AuthLayout>
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/assinar"
+                    element={
+                        <ProtectedRoute>
+                            <AuthLayout><Subscribe /></AuthLayout>
                         </ProtectedRoute>
                     }
                 />
