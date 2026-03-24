@@ -19,10 +19,17 @@ class UserRole(str, Enum):
 
 class SeniorityLevel(str, Enum):
     junior = "junior"
-    pleno = "pleno"
+    mid = "mid"
     senior = "senior"
     lead = "lead"
-    especialista = "especialista"
+    specialist = "specialist"
+
+
+class CompanySize(str, Enum):
+    small = "1-10"
+    medium = "11-50"
+    large = "51-200"
+    enterprise = "200+"
 
 
 # ---------------------------------------------------------------------------
@@ -168,12 +175,90 @@ class ProfileResponse(BaseModel):
     technical_skills: List[str]
     soft_skills: List[str]
     languages: List[str]
-    experiences: List[ExperienceResponse]
-    education: List[EducationResponse]
 
 
 class UserWithProfileResponse(UserResponse):
     profile: Optional[ProfileResponse] = None
+
+
+# ---------------------------------------------------------------------------
+# Candidate Profile
+# ---------------------------------------------------------------------------
+
+class CandidateProfileUpdate(BaseModel):
+    title: Optional[str] = None
+    location: Optional[str] = None
+    contact_email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    github_url: Optional[str] = None
+    portfolio_url: Optional[str] = None
+    seniority: Optional[SeniorityLevel] = None
+    years_experience: Optional[int] = None
+    current_position: Optional[str] = None
+    current_company: Optional[str] = None
+    available_for_work: Optional[bool] = None
+    technical_skills: Optional[List[str]] = None
+    soft_skills: Optional[List[str]] = None
+    languages: Optional[List[str]] = None
+
+
+class CandidateProfileResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    user_id: UUID
+    title: Optional[str]
+    location: Optional[str]
+    contact_email: Optional[str]
+    phone: Optional[str]
+    linkedin_url: Optional[str]
+    github_url: Optional[str]
+    portfolio_url: Optional[str]
+    seniority: Optional[SeniorityLevel]
+    years_experience: Optional[int]
+    current_position: Optional[str]
+    current_company: Optional[str]
+    available_for_work: bool
+    technical_skills: List[str]
+    soft_skills: List[str]
+    languages: List[str]
+    experiences: List[ExperienceResponse] = []
+    education: List[EducationResponse] = []
+    created_at: datetime
+    updated_at: datetime
+
+
+# ---------------------------------------------------------------------------
+# Recruiter Profile
+# ---------------------------------------------------------------------------
+
+class RecruiterProfileUpdate(BaseModel):
+    company_name: Optional[str] = None
+    company_website: Optional[str] = None
+    company_size: Optional[CompanySize] = None
+    industry: Optional[str] = None
+    role_title: Optional[str] = None
+    hiring_volume: Optional[int] = None
+    country: Optional[str] = None
+    timezone: Optional[str] = None
+
+
+class RecruiterProfileResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    user_id: UUID
+    company_name: Optional[str]
+    company_website: Optional[str]
+    company_size: Optional[CompanySize]
+    industry: Optional[str]
+    role_title: Optional[str]
+    hiring_volume: Optional[int]
+    country: Optional[str]
+    timezone: Optional[str]
+    created_at: datetime
+    updated_at: datetime
 
 
 # ---------------------------------------------------------------------------
