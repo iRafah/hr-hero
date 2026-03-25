@@ -13,7 +13,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 # ---------------------------------------------------------------------------
 class UserRole(str, Enum):
     admin = "admin"
-    user = "user"
+    candidate = "candidate"
     recruiter = "recruiter"
 
 
@@ -39,6 +39,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     full_name: str
+    role: UserRole = UserRole.candidate
 
     @field_validator("password")
     @classmethod

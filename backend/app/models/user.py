@@ -19,7 +19,7 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
     full_name = Column(String(255), nullable=False)
-    role = Column(Enum("admin", "user", "recruiter", name="user_role"), nullable=False, default="user")
+    role = Column(Enum("admin", "candidate", "recruiter", name="user_role"), nullable=False, default="candidate")
     is_active = Column(Boolean, nullable=False, default=True)
     is_verified = Column(Boolean, nullable=False, default=False)
     verification_token = Column(String(255), nullable=True, index=True)

@@ -182,12 +182,17 @@ export default function Homepage() {
     const navigate = useNavigate();
     const { isAuthenticated } = useAuth();
 
-    const handlePlanCTA = () => {
-        navigate(isAuthenticated ? "/assinar" : "/account");
+    const handlePlanCTA = (planId) => {
+        if (isAuthenticated) {
+            navigate("/subscribe");
+        } else {
+            const params = planId === "business" ? "?plan=business" : "";
+            navigate(`/comecar${params}`);
+        }
     };
 
     const handleHeroCTA = () => {
-        navigate(isAuthenticated ? "/dashboard" : "/account");
+        navigate(isAuthenticated ? "/dashboard" : "/comecar");
     };
 
     const scrollToPlans = () => {
@@ -445,12 +450,12 @@ export default function Homepage() {
                         </p>
                     </div>
 
-                    <div className="grid md:grid-cols-3 gap-6 items-start">
+                    <div className="grid md:grid-cols-3 gap-6 items-stretch">
                         {PLANS.map((plan) => (
                             <div
                                 key={plan.id}
                                 className={cn(
-                                    "relative rounded-2xl border p-8 flex flex-col gap-6",
+                                    "relative rounded-2xl border p-8 flex flex-col gap-6 h-full",
                                     plan.highlighted
                                         ? "border-brand-primary bg-brand-elevated shadow-lg shadow-brand-primary/10 md:scale-105"
                                         : "border-brand-border bg-brand-elevated"
@@ -511,7 +516,7 @@ export default function Homepage() {
                                 <Button
                                     variant={plan.highlighted ? "primary" : "secondary"}
                                     size="full"
-                                    onClick={handlePlanCTA}
+                                    onClick={() => handlePlanCTA(plan.id)}
                                 >
                                     Escolher plano
                                 </Button>

@@ -6,7 +6,7 @@ import { cn } from "../../utils/cn";
 
 const NAV_ITEMS = [
     { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-    { label: "Perfil", path: "/perfil", icon: User },
+    { label: "Perfil", path: "/profile", icon: User },
     { label: "Analisar CV", path: "/analyse", icon: Search },
     { label: "Vagas", path: "/vagas", icon: Briefcase, disabled: true },
     { label: "Currículos", path: "/curriculos", icon: FileText, disabled: true },

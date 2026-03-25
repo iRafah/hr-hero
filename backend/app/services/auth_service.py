@@ -19,10 +19,13 @@ async def register_user(db: AsyncSession, user_data: UserCreate) -> User:
 
     verification_token = generate_verification_token()
 
+    role = user_data.role.value if user_data.role else "candidate"
+
     user = User(
         email=user_data.email,
         hashed_password=hash_password(user_data.password),
         full_name=user_data.full_name,
+        role=role,
         verification_token=verification_token,
     )
     db.add(user)
