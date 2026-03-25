@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { registerUser } from "../../../services/authApi";
 
-function SignUpForm() {
+const ROLE_LABELS = {
+    candidate: "Candidato",
+    recruiter: "Recrutador",
+};
+
+function SignUpForm({ role }) {
     const [state, setState] = useState({ full_name: "", email: "", password: "" });
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
@@ -21,7 +26,7 @@ function SignUpForm() {
         setSuccess("");
         setIsLoading(true);
         try {
-            await registerUser(state);
+            await registerUser({ ...state, role: role || "candidate" });
             setSuccess("Conta criada! Verifique seu email para ativar sua conta.");
             setState({ full_name: "", email: "", password: "" });
         } catch (err) {
@@ -40,6 +45,24 @@ function SignUpForm() {
                     <a href="#" className="social"><i className="fab fa-google-plus-g" /></a>
                     <a href="#" className="social"><i className="fab fa-linkedin-in" /></a>
                 </div>
+                {role && (
+                    <span
+                        style={{
+                            display: "inline-block",
+                            fontSize: "11px",
+                            fontWeight: 600,
+                            letterSpacing: "0.05em",
+                            textTransform: "uppercase",
+                            background: "rgba(108,99,255,0.12)",
+                            color: role === "recruiter" ? "#2D7FF9" : "#6C63FF",
+                            borderRadius: "999px",
+                            padding: "3px 12px",
+                            marginBottom: "4px",
+                        }}
+                    >
+                        {ROLE_LABELS[role] ?? role}
+                    </span>
+                )}
                 <span>ou use seu email para se registrar</span>
                 <input
                     type="text"

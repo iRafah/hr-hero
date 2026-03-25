@@ -8,9 +8,11 @@ import { AuthLayout } from "./components/layout/AuthLayout";
 import Homepage from "./pages/Homepage";
 import Account from "./pages/Account";
 import VerifyEmail from "./pages/VerifyEmail";
+import RoleSelection from "./pages/RoleSelection";
 import Dashboard from "./pages/Dashboard";
 import Analyse from "./pages/Analyse";
 import Profile from "./pages/Profile";
+import Subscribe from "./pages/Subscribe";
 
 function App() {
     return (
@@ -18,6 +20,7 @@ function App() {
             <Routes>
                 {/* Public */}
                 <Route path="/" element={<Homepage />} />
+                <Route path="/comecar" element={<RoleSelection />} />
                 <Route path="/account" element={<Account />} />
                 <Route path="/verificar-email" element={<VerifyEmail />} />
 
@@ -39,10 +42,18 @@ function App() {
                     }
                 />
                 <Route
-                    path="/perfil"
+                    path="/profile"
                     element={
                         <ProtectedRoute>
                             <AuthLayout><Profile /></AuthLayout>
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/subscribe"
+                    element={
+                        <ProtectedRoute>
+                            <AuthLayout><Subscribe /></AuthLayout>
                         </ProtectedRoute>
                     }
                 />

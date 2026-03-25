@@ -1,11 +1,16 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import "./account.css";
 import SignInForm from "../../features/auth/components/SignIn";
 import SignUpForm from "../../features/auth/components/SignUp";
 import { Navbar } from "../../components/layout/Navbar";
 
 export default function Account() {
-    const [type, setType] = useState("signIn");
+    const [searchParams] = useSearchParams();
+    const roleFromUrl = searchParams.get("role");
+    const modeFromUrl = searchParams.get("mode");
+
+    const [type, setType] = useState(modeFromUrl === "signup" || roleFromUrl ? "signUp" : "signIn");
 
     const containerClass = "container " + (type === "signUp" ? "right-panel-active" : "");
 
@@ -15,7 +20,7 @@ export default function Account() {
 
             <div className="account-page flex justify-center items-center">
                 <div className={containerClass} id="container">
-                    <SignUpForm />
+                    <SignUpForm role={roleFromUrl} />
                     <SignInForm />
 
                     <div className="overlay-container">
