@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import Analyse from "./pages/Analyse";
 import Profile from "./pages/Profile";
 import Subscribe from "./pages/Subscribe";
+import SubscribeSuccess from "./pages/SubscribeSuccess";
 
 function App() {
     return (
@@ -54,6 +55,14 @@ function App() {
                     element={
                         <ProtectedRoute>
                             <AuthLayout><Subscribe /></AuthLayout>
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/subscribe/sucesso"
+                    element={
+                        <ProtectedRoute>
+                            <AuthLayout><SubscribeSuccess /></AuthLayout>
                         </ProtectedRoute>
                     }
                 />
