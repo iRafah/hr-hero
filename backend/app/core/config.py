@@ -26,6 +26,12 @@ class Settings:
     # Frontend
     FRONTEND_URL: str = os.environ.get("FRONTEND_URL", "http://localhost:5173")
 
+    # Stripe
+    STRIPE_SECRET_KEY: str = os.environ.get("STRIPE_SECRET_KEY", "")
+    STRIPE_WEBHOOK_SECRET: str = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+    STRIPE_PRICE_PRO: str = os.environ.get("STRIPE_PRICE_PRO", "")
+    STRIPE_PRICE_BUSINESS: str = os.environ.get("STRIPE_PRICE_BUSINESS", "")
+
     # Email (SMTP)
     MAIL_USERNAME: str = os.environ.get("MAIL_USERNAME", "")
     MAIL_PASSWORD: str = os.environ.get("MAIL_PASSWORD", "")

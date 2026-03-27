@@ -160,6 +160,7 @@ FRONTEND:
 
 RULE:
 - Never mix UI and business logic
+- Update the README.md file with relevant information
 
 # 🧠 How-To: Create a New Page
 

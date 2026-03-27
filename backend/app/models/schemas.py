@@ -263,6 +263,51 @@ class RecruiterProfileResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Subscription
+# ---------------------------------------------------------------------------
+
+class SubscriptionPlan(str, Enum):
+    free = "free"
+    pro = "pro"
+    business = "business"
+
+
+class SubscriptionStatus(str, Enum):
+    active = "active"
+    canceled = "canceled"
+    past_due = "past_due"
+    trialing = "trialing"
+    inactive = "inactive"
+
+
+class CheckoutSessionRequest(BaseModel):
+    plan: SubscriptionPlan
+
+    @field_validator("plan")
+    @classmethod
+    def validate_paid_plan(cls, value: "SubscriptionPlan") -> "SubscriptionPlan":
+        if value == SubscriptionPlan.free:
+            raise ValueError("Plano gratuito não requer pagamento")
+        return value
+
+
+class CheckoutSessionResponse(BaseModel):
+    checkout_url: str
+
+
+class SubscriptionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    user_id: UUID
+    plan: SubscriptionPlan
+    status: SubscriptionStatus
+    current_period_end: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+
+
+# ---------------------------------------------------------------------------
 # Analysis (existing)
 # ---------------------------------------------------------------------------
 

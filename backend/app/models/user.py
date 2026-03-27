@@ -29,6 +29,7 @@ class User(Base):
     profile = relationship("UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
     candidate_profile = relationship("CandidateProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
     recruiter_profile = relationship("RecruiterProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    subscription = relationship("Subscription", back_populates="user", uselist=False, cascade="all, delete-orphan")
 
 
 class UserProfile(Base):
@@ -137,6 +138,31 @@ class CandidateProfile(Base):
     education = relationship(
         "UserEducation", back_populates="profile", cascade="all, delete-orphan", order_by="UserEducation.start_date.desc()"
     )
+
+
+class Subscription(Base):
+    """Stripe subscription record — one per user."""
+
+    __tablename__ = "subscriptions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
+
+    stripe_customer_id = Column(String(255), nullable=True, index=True)
+    stripe_subscription_id = Column(String(255), nullable=True, unique=True, index=True)
+
+    plan = Column(Enum("free", "pro", "business", name="subscription_plan"), nullable=False, default="free")
+    status = Column(
+        Enum("active", "canceled", "past_due", "trialing", "inactive", name="subscription_status"),
+        nullable=False,
+        default="inactive",
+    )
+
+    current_period_end = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("User", back_populates="subscription")
 
 
 class RecruiterProfile(Base):
