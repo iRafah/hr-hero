@@ -3,6 +3,8 @@ import {
     createCheckoutSession,
     getMySubscription,
     cancelSubscription,
+    changePlan as changePlanApi,
+    createPortalSession,
 } from "../../../services/subscriptionApi";
 
 export function useSubscription() {
@@ -38,12 +40,25 @@ export function useSubscription() {
         return updated;
     }
 
+    async function changePlan(newPlan) {
+        const updated = await changePlanApi(newPlan);
+        setSubscription(updated);
+        return updated;
+    }
+
+    async function openPortal() {
+        const { portal_url } = await createPortalSession();
+        window.location.href = portal_url;
+    }
+
     return {
         subscription,
         loading,
         error,
         startCheckout,
         cancel,
+        changePlan,
+        openPortal,
         refetch: fetchSubscription,
     };
 }

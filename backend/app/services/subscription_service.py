@@ -1,3 +1,4 @@
+import decimal
 import uuid
 from datetime import datetime
 
@@ -6,6 +7,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.email_service import (
+    send_cancellation_email,
+    send_payment_failed_email,
+    send_payment_success_email,
+    send_plan_changed_email,
+)
 from app.models.user import Subscription, User
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -37,6 +44,31 @@ async def _get_or_create_stripe_customer(user: User, subscription: Subscription 
     return customer.id
 
 
+def _to_dict(obj):
+    """Recursively convert a Stripe SDK object to a plain Python dict.
+
+    Newer Stripe SDK versions (v5+) store data in ._data and do NOT expose
+    .keys() / .get() as native methods — those go through __getattr__ which
+    raises AttributeError if the key isn't in the payload.  We therefore
+    access ._data directly instead of relying on the dict-like interface.
+
+    Also handles Decimal values that the Stripe SDK may embed for monetary
+    amounts, which are not JSON-serializable by default.
+    """
+    if isinstance(obj, decimal.Decimal):
+        int_val = int(obj)
+        return int_val if decimal.Decimal(int_val) == obj else float(obj)
+    if isinstance(obj, list):
+        return [_to_dict(v) for v in obj]
+    if isinstance(obj, dict):
+        return {k: _to_dict(v) for k, v in obj.items()}
+    # StripeObject keeps its payload in a private ._data dict
+    _data = getattr(obj, "_data", None)
+    if isinstance(_data, dict):
+        return {k: _to_dict(v) for k, v in _data.items()}
+    return obj
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -50,7 +82,6 @@ async def create_checkout_session(db: AsyncSession, user: User, plan: str) -> st
     subscription = await _get_subscription(db, user.id)
     customer_id = await _get_or_create_stripe_customer(user, subscription)
 
-    # Persist the Stripe customer ID immediately so we can look it up on webhook
     if not subscription:
         subscription = Subscription(user_id=user.id, stripe_customer_id=customer_id)
         db.add(subscription)
@@ -74,28 +105,83 @@ async def create_checkout_session(db: AsyncSession, user: User, plan: str) -> st
     return session.url
 
 
+async def create_portal_session(db: AsyncSession, user: User) -> str:
+    """Create a Stripe Billing Portal session and return the redirect URL."""
+    subscription = await _get_subscription(db, user.id)
+
+    if not subscription or not subscription.stripe_customer_id:
+        raise ValueError("Nenhuma assinatura encontrada para gerenciar")
+
+    session = stripe.billing_portal.Session.create(
+        customer=subscription.stripe_customer_id,
+        return_url=f"{settings.FRONTEND_URL}/account/subscription",
+    )
+    return session.url
+
+
+async def change_plan(db: AsyncSession, user: User, new_plan: str) -> Subscription:
+    """Upgrade or downgrade an active paid subscription to another paid plan."""
+    subscription = await _get_subscription(db, user.id)
+
+    if not subscription or not subscription.stripe_subscription_id:
+        raise ValueError("Nenhuma assinatura ativa encontrada")
+
+    if subscription.plan == new_plan:
+        raise ValueError("Você já está neste plano")
+
+    if subscription.status not in ("active", "trialing"):
+        raise ValueError("Assinatura não está ativa")
+
+    new_price_id = _PRICE_MAP.get(new_plan)
+    if not new_price_id:
+        raise ValueError(f"Plano inválido: {new_plan}")
+
+    stripe_sub = _to_dict(stripe.Subscription.retrieve(subscription.stripe_subscription_id))
+    item_id = stripe_sub["items"]["data"][0]["id"]
+    old_plan = subscription.plan
+
+    updated_stripe_sub = _to_dict(
+        stripe.Subscription.modify(
+            subscription.stripe_subscription_id,
+            items=[{"id": item_id, "price": new_price_id}],
+            proration_behavior="create_prorations",
+        )
+    )
+
+    subscription.plan = new_plan
+    if updated_stripe_sub.get("current_period_end"):
+        subscription.current_period_end = datetime.fromtimestamp(
+            updated_stripe_sub["current_period_end"]
+        )
+    await db.commit()
+    await db.refresh(subscription)
+
+    try:
+        await send_plan_changed_email(user.email, user.full_name, old_plan, new_plan)
+    except Exception:
+        pass  # Email failure must not roll back a successful plan change
+
+    return subscription
+
+
 async def handle_webhook(db: AsyncSession, payload: bytes, stripe_signature: str) -> dict:
     """Verify and process a Stripe webhook event."""
-    import json
+    import json as _json
 
-    if not settings.STRIPE_WEBHOOK_SECRET:
-        # Dev-only fallback: no secret configured, parse without verification
-        event = json.loads(payload)
-    else:
+    if settings.STRIPE_WEBHOOK_SECRET:
+        # Use construct_event only for signature verification; the returned
+        # StripeObject is discarded in favour of re-parsing the raw payload as
+        # plain JSON to avoid all SDK object serialisation issues.
         try:
-            event = stripe.Webhook.construct_event(
+            stripe.Webhook.construct_event(
                 payload, stripe_signature, settings.STRIPE_WEBHOOK_SECRET
             )
         except stripe.error.SignatureVerificationError:
             raise ValueError("Assinatura do webhook inválida")
 
+    event = _json.loads(payload)
     event_type = event["type"]
-
-    # Stripe SDK returns StripeObject (not a plain dict) when construct_event is used.
-    # str() on a StripeObject serialises to JSON, giving us a consistent plain dict
-    # that all handlers can safely use .get() on.
-    raw = event["data"]["object"]
-    data = json.loads(str(raw)) if not isinstance(raw, dict) else raw
+    data = event["data"]["object"]
 
     if event_type == "checkout.session.completed":
         await _handle_checkout_completed(db, data)
@@ -114,16 +200,11 @@ async def handle_webhook(db: AsyncSession, payload: bytes, stripe_signature: str
 async def verify_checkout_session(db: AsyncSession, session_id: str, user: User) -> Subscription:
     """Called from the success page to activate the subscription immediately.
 
-    This is a reliable fallback for when the Stripe webhook hasn't fired yet
-    (e.g. local dev without the Stripe CLI running).
+    Reliable fallback for when the Stripe webhook hasn't fired yet in local dev.
     """
-    import json
-
     stripe_session = stripe.checkout.Session.retrieve(session_id)
-    # Normalise to plain dict so all downstream code can safely use .get()
-    session = json.loads(str(stripe_session))
+    session = _to_dict(stripe_session)
 
-    # Verify ownership — never trust a session_id from the frontend blindly
     meta_user_id = session.get("metadata", {}).get("user_id")
     if meta_user_id != str(user.id):
         raise ValueError("Sessão inválida para este usuário")
@@ -131,7 +212,6 @@ async def verify_checkout_session(db: AsyncSession, session_id: str, user: User)
     if session.get("payment_status") != "paid":
         raise ValueError("Pagamento ainda não confirmado")
 
-    # Re-use the same logic the webhook calls
     await _handle_checkout_completed(db, session)
 
     subscription = await _get_subscription(db, user.id)
@@ -154,7 +234,6 @@ async def cancel_subscription(db: AsyncSession, user: User) -> Subscription:
     if subscription.status not in ("active", "trialing", "past_due"):
         raise ValueError("Assinatura já está cancelada ou inativa")
 
-    # Cancel at period end so user keeps access until billing cycle ends
     stripe.Subscription.modify(
         subscription.stripe_subscription_id,
         cancel_at_period_end=True,
@@ -163,6 +242,16 @@ async def cancel_subscription(db: AsyncSession, user: User) -> Subscription:
     subscription.status = "canceled"
     await db.commit()
     await db.refresh(subscription)
+
+    period_end_str = (
+        subscription.current_period_end.strftime("%d/%m/%Y")
+        if subscription.current_period_end
+        else "em breve"
+    )
+    try:
+        await send_cancellation_email(user.email, user.full_name, period_end_str)
+    except Exception:
+        pass
 
     return subscription
 
@@ -181,12 +270,9 @@ async def _handle_checkout_completed(db: AsyncSession, session: dict) -> None:
 
     period_end = None
     try:
-        import json as _json
-        stripe_sub = _json.loads(str(stripe.Subscription.retrieve(stripe_subscription_id)))
+        stripe_sub = _to_dict(stripe.Subscription.retrieve(stripe_subscription_id))
         period_end = datetime.fromtimestamp(stripe_sub["current_period_end"])
     except Exception:
-        # Non-fatal: subscription is still activated; period_end will be filled
-        # by the subsequent customer.subscription.updated webhook.
         pass
 
     user_uuid = uuid.UUID(user_id)
@@ -205,6 +291,14 @@ async def _handle_checkout_completed(db: AsyncSession, session: dict) -> None:
 
     await db.commit()
 
+    # Send payment success email (best-effort)
+    try:
+        user = await db.get(User, user_uuid)
+        if user:
+            await send_payment_success_email(user.email, user.full_name, plan)
+    except Exception:
+        pass
+
 
 async def _handle_subscription_updated(db: AsyncSession, stripe_sub: dict) -> None:
     subscription_id = stripe_sub.get("id")
@@ -217,18 +311,28 @@ async def _handle_subscription_updated(db: AsyncSession, stripe_sub: dict) -> No
         return
 
     stripe_status = stripe_sub.get("status", "inactive")
-    status_map = {
-        "active": "active",
-        "past_due": "past_due",
-        "canceled": "canceled",
-        "trialing": "trialing",
-    }
-    subscription.status = status_map.get(stripe_status, "inactive")
+    cancel_at_period_end = stripe_sub.get("cancel_at_period_end", False)
+
+    # When Stripe confirms cancellation at period end, keep our "canceled" status.
+    # Without this guard, Stripe's "active" event would overwrite our local canceled state.
+    if cancel_at_period_end and stripe_status == "active":
+        db_status = "canceled"
+    else:
+        status_map = {
+            "active": "active",
+            "past_due": "past_due",
+            "canceled": "canceled",
+            "trialing": "trialing",
+        }
+        db_status = status_map.get(stripe_status, "inactive")
+
+    subscription.status = db_status
 
     if stripe_sub.get("current_period_end"):
         subscription.current_period_end = datetime.fromtimestamp(stripe_sub["current_period_end"])
 
-    if stripe_status == "canceled":
+    # Subscription fully expired — drop back to free
+    if stripe_status == "canceled" and not cancel_at_period_end:
         subscription.plan = "free"
 
     await db.commit()
@@ -243,6 +347,16 @@ async def _handle_payment_failed(db: AsyncSession, invoice: dict) -> None:
         select(Subscription).where(Subscription.stripe_subscription_id == subscription_id)
     )
     subscription = result.scalar_one_or_none()
-    if subscription:
-        subscription.status = "past_due"
-        await db.commit()
+    if not subscription:
+        return
+
+    subscription.status = "past_due"
+    await db.commit()
+
+    # Send payment failed email (best-effort)
+    try:
+        user = await db.get(User, subscription.user_id)
+        if user:
+            await send_payment_failed_email(user.email, user.full_name)
+    except Exception:
+        pass

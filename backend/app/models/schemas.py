@@ -291,8 +291,23 @@ class CheckoutSessionRequest(BaseModel):
         return value
 
 
+class ChangePlanRequest(BaseModel):
+    plan: SubscriptionPlan
+
+    @field_validator("plan")
+    @classmethod
+    def validate_paid_plan(cls, value: "SubscriptionPlan") -> "SubscriptionPlan":
+        if value == SubscriptionPlan.free:
+            raise ValueError("Para cancelar, use o endpoint de cancelamento")
+        return value
+
+
 class CheckoutSessionResponse(BaseModel):
     checkout_url: str
+
+
+class PortalSessionResponse(BaseModel):
+    portal_url: str
 
 
 class SubscriptionResponse(BaseModel):

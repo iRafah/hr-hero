@@ -8,8 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_verified_user
 from app.core.database import get_db
 from app.models.schemas import (
+    ChangePlanRequest,
     CheckoutSessionRequest,
     CheckoutSessionResponse,
+    PortalSessionResponse,
     SubscriptionResponse,
 )
 from app.models.user import User
@@ -67,6 +69,35 @@ async def verify_checkout(
         subscription = await subscription_service.verify_checkout_session(
             db, session_id, current_user
         )
+    except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error))
+
+    return subscription
+
+
+@router.post("/portal", response_model=PortalSessionResponse)
+async def create_billing_portal(
+    current_user: User = Depends(get_current_verified_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return a Stripe Billing Portal URL for the current user."""
+    try:
+        url = await subscription_service.create_portal_session(db, current_user)
+    except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error))
+
+    return PortalSessionResponse(portal_url=url)
+
+
+@router.post("/change-plan", response_model=SubscriptionResponse)
+async def change_plan(
+    body: ChangePlanRequest,
+    current_user: User = Depends(get_current_verified_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Upgrade or downgrade between paid plans without a new Checkout session."""
+    try:
+        subscription = await subscription_service.change_plan(db, current_user, body.plan.value)
     except ValueError as error:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error))
 

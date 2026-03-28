@@ -2,7 +2,10 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { GiRobotHelmet } from "react-icons/gi";
 import { LayoutDashboard, User, Search, Briefcase, FileText, CreditCard, LogOut, X } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { useSubscription } from "../../features/subscription/hooks/useSubscription";
 import { cn } from "../../utils/cn";
+
+const PLAN_LABELS = { free: "Plano Gratuito", pro: "Plano Pro", business: "Plano Business" };
 
 const NAV_ITEMS = [
     { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
@@ -10,13 +13,15 @@ const NAV_ITEMS = [
     { label: "Analisar CV", path: "/analyse", icon: Search },
     { label: "Vagas", path: "/vagas", icon: Briefcase, disabled: true },
     { label: "Currículos", path: "/curriculos", icon: FileText, disabled: true },
-    { label: "Assinatura", path: "/assinatura", icon: CreditCard, disabled: true },
+    { label: "Assinatura", path: "/account/subscription", icon: CreditCard },
 ];
 
 export function Sidebar({ isOpen, onClose }) {
     const location = useLocation();
     const navigate = useNavigate();
     const { logout, user } = useAuth();
+    const { subscription } = useSubscription();
+    const planLabel = PLAN_LABELS[subscription?.plan ?? "free"];
 
     const handleLogout = () => {
         logout();
@@ -86,7 +91,7 @@ export function Sidebar({ isOpen, onClose }) {
                 <div className="px-3 py-4 border-t border-brand-border space-y-2">
                     {user && (
                         <div className="px-3 py-2.5 rounded-lg bg-brand-violet/10 border border-brand-violet/30">
-                            <p className="text-xs text-brand-violet font-medium">Plano Gratuito</p>
+                            <p className="text-xs text-brand-violet font-medium">{planLabel}</p>
                             <p className="text-xs text-brand-muted mt-0.5 truncate">{user.email}</p>
                         </div>
                     )}
