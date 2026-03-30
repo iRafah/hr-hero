@@ -318,6 +318,7 @@ class SubscriptionResponse(BaseModel):
     plan: SubscriptionPlan
     status: SubscriptionStatus
     current_period_end: Optional[datetime] = None
+    scheduled_plan: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

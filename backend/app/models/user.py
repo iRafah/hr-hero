@@ -159,6 +159,8 @@ class Subscription(Base):
     )
 
     current_period_end = Column(DateTime, nullable=True)
+    scheduled_plan = Column(String(50), nullable=True)          # pending downgrade plan
+    stripe_schedule_id = Column(String(255), nullable=True)     # Stripe SubscriptionSchedule ID
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 

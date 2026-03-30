@@ -15,6 +15,7 @@ import { Button } from "../../components/ui/Button";
 import { cn } from "../../utils/cn";
 import { useSubscription } from "../../features/subscription/hooks/useSubscription";
 import { CancelModal } from "../../features/subscription/components/CancelModal";
+import { PlanChangeModal } from "../../features/subscription/components/PlanChangeModal";
 import { useToast } from "../../context/ToastContext";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -47,6 +48,8 @@ export default function AccountSubscription() {
     const [cancelLoading, setCancelLoading] = useState(false);
     const [changingTo, setChangingTo] = useState(null);
     const [portalLoading, setPortalLoading] = useState(false);
+    const [planChangeModal, setPlanChangeModal] = useState(null);
+    const [planChangeLoading, setPlanChangeLoading] = useState(false);
 
     const plan = subscription?.plan ?? "free";
     const isPaid = plan !== "free";
@@ -59,22 +62,40 @@ export default function AccountSubscription() {
 
     // ── Actions ──────────────────────────────────────────────────────────────
 
-    async function handleChangePlan(newPlan) {
-        if (PLAN_ORDER[newPlan] > PLAN_ORDER[plan]) {
-            // Upgrade to a paid plan the user hasn't had yet → new checkout
-            if (plan === "free") {
-                await startCheckout(newPlan);
-                return;
-            }
+    function handleChangePlan(newPlan) {
+        if (plan === "free") {
+            startCheckout(newPlan);
+            return;
         }
+        setPlanChangeModal({ toPlan: newPlan, isUpgrade: PLAN_ORDER[newPlan] > PLAN_ORDER[plan] });
+    }
 
-        setChangingTo(newPlan);
+    async function handlePlanChangeConfirm() {
+        if (!planChangeModal) return;
+        const { toPlan, isUpgrade } = planChangeModal;
+        setPlanChangeLoading(true);
+        setChangingTo(toPlan);
         try {
-            await changePlan(newPlan);
-            addToast(`Plano atualizado para ${PLAN_LABELS[newPlan]} com sucesso!`, "success");
+            await changePlan(toPlan);
+            if (isUpgrade) {
+                addToast(
+                    "Seu plano foi atualizado imediatamente. Você será cobrado proporcionalmente pelo período restante.",
+                    "success"
+                );
+            } else {
+                const dateStr = subscription?.current_period_end
+                    ? new Date(subscription.current_period_end).toLocaleDateString("pt-BR")
+                    : "o fim do período atual";
+                addToast(
+                    `Seu plano será alterado no próximo ciclo de cobrança. Você continuará com acesso completo até ${dateStr}.`,
+                    "success"
+                );
+            }
+            setPlanChangeModal(null);
         } catch (err) {
             addToast(err?.response?.data?.detail || "Erro ao atualizar plano", "error");
         } finally {
+            setPlanChangeLoading(false);
             setChangingTo(null);
         }
     }
@@ -189,6 +210,15 @@ export default function AccountSubscription() {
                             {new Date(subscription.current_period_end).toLocaleDateString("pt-BR")}.
                         </div>
                     )}
+
+                    {/* Scheduled downgrade notice */}
+                    {subscription?.scheduled_plan && (
+                        <div className="flex items-start gap-2 text-sm text-brand-muted bg-brand-elevated rounded-xl px-4 py-3 border border-brand-border">
+                            <Clock size={15} className="shrink-0 mt-0.5 text-yellow-400" />
+                            Alteração agendada: seu plano será alterado para{" "}
+                            {PLAN_LABELS[subscription.scheduled_plan]} no próximo ciclo de cobrança.
+                        </div>
+                    )}
                 </div>
 
                 {/* ── Actions card ─────────────────────────────────────── */}
@@ -209,7 +239,7 @@ export default function AccountSubscription() {
                                 variant="success"
                                 size="sm"
                                 onClick={() => handleChangePlan(upgradePlan)}
-                                disabled={changingTo !== null || portalLoading}
+                                disabled={changingTo !== null || portalLoading || planChangeLoading}
                             >
                                 {changingTo === upgradePlan ? (
                                     <Loader2 size={13} className="animate-spin" />
@@ -222,7 +252,7 @@ export default function AccountSubscription() {
                     )}
 
                     {/* Downgrade */}
-                    {downgradePlan && isActive && (
+                    {downgradePlan && isActive && !subscription?.scheduled_plan && (
                         <ActionRow
                             icon={ArrowDown}
                             iconColor="text-brand-muted"
@@ -233,7 +263,7 @@ export default function AccountSubscription() {
                                 variant="secondary"
                                 size="sm"
                                 onClick={() => handleChangePlan(downgradePlan)}
-                                disabled={changingTo !== null || portalLoading}
+                                disabled={changingTo !== null || portalLoading || planChangeLoading}
                             >
                                 {changingTo === downgradePlan ? (
                                     <Loader2 size={13} className="animate-spin" />
@@ -321,6 +351,17 @@ export default function AccountSubscription() {
                 onClose={() => setCancelModalOpen(false)}
                 onConfirm={handleCancelConfirm}
                 loading={cancelLoading}
+            />
+
+            <PlanChangeModal
+                isOpen={planChangeModal !== null}
+                onClose={() => !planChangeLoading && setPlanChangeModal(null)}
+                onConfirm={handlePlanChangeConfirm}
+                loading={planChangeLoading}
+                fromPlan={plan}
+                toPlan={planChangeModal?.toPlan ?? "pro"}
+                currentPeriodEnd={subscription?.current_period_end}
+                isUpgrade={planChangeModal?.isUpgrade ?? false}
             />
         </>
     );

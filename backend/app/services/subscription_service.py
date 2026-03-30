@@ -119,8 +119,15 @@ async def create_portal_session(db: AsyncSession, user: User) -> str:
     return session.url
 
 
+_PLAN_ORDER = {"pro": 1, "business": 2}
+
+
 async def change_plan(db: AsyncSession, user: User, new_plan: str) -> Subscription:
-    """Upgrade or downgrade an active paid subscription to another paid plan."""
+    """Upgrade or downgrade an active paid subscription to another paid plan.
+
+    Upgrades are applied immediately with proration.
+    Downgrades are scheduled for the next billing cycle via Stripe Subscription Schedules.
+    """
     subscription = await _get_subscription(db, user.id)
 
     if not subscription or not subscription.stripe_subscription_id:
@@ -136,30 +143,86 @@ async def change_plan(db: AsyncSession, user: User, new_plan: str) -> Subscripti
     if not new_price_id:
         raise ValueError(f"Plano inválido: {new_plan}")
 
-    stripe_sub = _to_dict(stripe.Subscription.retrieve(subscription.stripe_subscription_id))
-    item_id = stripe_sub["items"]["data"][0]["id"]
+    is_upgrade = _PLAN_ORDER.get(new_plan, 0) > _PLAN_ORDER.get(subscription.plan, 0)
     old_plan = subscription.plan
 
-    updated_stripe_sub = _to_dict(
-        stripe.Subscription.modify(
-            subscription.stripe_subscription_id,
-            items=[{"id": item_id, "price": new_price_id}],
-            proration_behavior="create_prorations",
-        )
-    )
+    stripe_sub = _to_dict(stripe.Subscription.retrieve(subscription.stripe_subscription_id))
+    item_id = stripe_sub["items"]["data"][0]["id"]
 
-    subscription.plan = new_plan
-    if updated_stripe_sub.get("current_period_end"):
-        subscription.current_period_end = datetime.fromtimestamp(
-            updated_stripe_sub["current_period_end"]
+    if is_upgrade:
+        # If a downgrade was scheduled, cancel it first
+        if subscription.stripe_schedule_id:
+            try:
+                stripe.SubscriptionSchedule.release(subscription.stripe_schedule_id)
+            except Exception:
+                pass
+            subscription.stripe_schedule_id = None
+            subscription.scheduled_plan = None
+
+        # Apply upgrade immediately with proration
+        updated_stripe_sub = _to_dict(
+            stripe.Subscription.modify(
+                subscription.stripe_subscription_id,
+                items=[{"id": item_id, "price": new_price_id}],
+                proration_behavior="create_prorations",
+            )
         )
+
+        subscription.plan = new_plan
+        if updated_stripe_sub.get("current_period_end"):
+            subscription.current_period_end = datetime.fromtimestamp(
+                updated_stripe_sub["current_period_end"]
+            )
+    else:
+        # Downgrade: only one scheduled downgrade allowed per cycle
+        if subscription.scheduled_plan:
+            raise ValueError("Você já possui uma alteração agendada para este período")
+
+        # In newer Stripe API versions current_period_end lives on the item, not the subscription root.
+        item_data = stripe_sub["items"]["data"][0]
+        current_period_end = item_data.get("current_period_end") or stripe_sub.get("current_period_end")
+        if not current_period_end and subscription.current_period_end:
+            current_period_end = int(subscription.current_period_end.timestamp())
+        if not current_period_end:
+            raise ValueError("Não foi possível determinar o fim do período atual de cobrança")
+
+        current_price_id = stripe_sub["items"]["data"][0]["price"]["id"]
+
+        schedule = _to_dict(
+            stripe.SubscriptionSchedule.create(
+                from_subscription=subscription.stripe_subscription_id
+            )
+        )
+
+        _to_dict(
+            stripe.SubscriptionSchedule.modify(
+                schedule["id"],
+                end_behavior="release",
+                phases=[
+                    {
+                        "start_date": schedule["phases"][0]["start_date"],
+                        "end_date": current_period_end,
+                        "items": [{"price": current_price_id, "quantity": 1}],
+                        "proration_behavior": "none",
+                    },
+                    {
+                        "start_date": current_period_end,
+                        "items": [{"price": new_price_id, "quantity": 1}],
+                    },
+                ],
+            )
+        )
+
+        subscription.scheduled_plan = new_plan
+        subscription.stripe_schedule_id = schedule["id"]
+
     await db.commit()
     await db.refresh(subscription)
 
     try:
         await send_plan_changed_email(user.email, user.full_name, old_plan, new_plan)
     except Exception:
-        pass  # Email failure must not roll back a successful plan change
+        pass
 
     return subscription
 
@@ -271,7 +334,9 @@ async def _handle_checkout_completed(db: AsyncSession, session: dict) -> None:
     period_end = None
     try:
         stripe_sub = _to_dict(stripe.Subscription.retrieve(stripe_subscription_id))
-        period_end = datetime.fromtimestamp(stripe_sub["current_period_end"])
+        items = stripe_sub.get("items", {}).get("data", [])
+        raw_period_end = (items[0].get("current_period_end") if items else None) or stripe_sub.get("current_period_end")
+        period_end = datetime.fromtimestamp(raw_period_end) if raw_period_end else None
     except Exception:
         pass
 
@@ -283,6 +348,8 @@ async def _handle_checkout_completed(db: AsyncSession, session: dict) -> None:
         subscription = Subscription(user_id=user_uuid)
         db.add(subscription)
 
+    already_active = subscription.status == "active" and subscription.stripe_subscription_id == stripe_subscription_id
+
     subscription.stripe_subscription_id = stripe_subscription_id
     subscription.plan = plan
     subscription.status = "active"
@@ -291,13 +358,14 @@ async def _handle_checkout_completed(db: AsyncSession, session: dict) -> None:
 
     await db.commit()
 
-    # Send payment success email (best-effort)
-    try:
-        user = await db.get(User, user_uuid)
-        if user:
-            await send_payment_success_email(user.email, user.full_name, plan)
-    except Exception:
-        pass
+    # Send payment success email only on first activation, not on duplicate calls
+    if not already_active:
+        try:
+            user = await db.get(User, user_uuid)
+            if user:
+                await send_payment_success_email(user.email, user.full_name, plan)
+        except Exception:
+            pass
 
 
 async def _handle_subscription_updated(db: AsyncSession, stripe_sub: dict) -> None:
@@ -328,12 +396,28 @@ async def _handle_subscription_updated(db: AsyncSession, stripe_sub: dict) -> No
 
     subscription.status = db_status
 
-    if stripe_sub.get("current_period_end"):
-        subscription.current_period_end = datetime.fromtimestamp(stripe_sub["current_period_end"])
+    items = stripe_sub.get("items", {}).get("data", [])
+    raw_period_end = (items[0].get("current_period_end") if items else None) or stripe_sub.get("current_period_end")
+    if raw_period_end:
+        subscription.current_period_end = datetime.fromtimestamp(raw_period_end)
 
     # Subscription fully expired — drop back to free
     if stripe_status == "canceled" and not cancel_at_period_end:
         subscription.plan = "free"
+
+    # Sync plan from Stripe price IDs so scheduled downgrades apply automatically
+    items = stripe_sub.get("items", {}).get("data", [])
+    if items:
+        price_id = items[0].get("price", {}).get("id")
+        if price_id:
+            price_to_plan = {v: k for k, v in _PRICE_MAP.items()}
+            synced_plan = price_to_plan.get(price_id)
+            if synced_plan and synced_plan != subscription.plan:
+                subscription.plan = synced_plan
+            # Clear schedule tracking once the scheduled plan is now active
+            if subscription.scheduled_plan and subscription.scheduled_plan == subscription.plan:
+                subscription.scheduled_plan = None
+                subscription.stripe_schedule_id = None
 
     await db.commit()
 
