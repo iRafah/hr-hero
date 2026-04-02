@@ -13,7 +13,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 # ---------------------------------------------------------------------------
 class UserRole(str, Enum):
     admin = "admin"
-    user = "user"
+    candidate = "candidate"
     recruiter = "recruiter"
 
 
@@ -39,6 +39,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     full_name: str
+    role: UserRole = UserRole.candidate
 
     @field_validator("password")
     @classmethod
@@ -257,6 +258,67 @@ class RecruiterProfileResponse(BaseModel):
     hiring_volume: Optional[int]
     country: Optional[str]
     timezone: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+
+
+# ---------------------------------------------------------------------------
+# Subscription
+# ---------------------------------------------------------------------------
+
+class SubscriptionPlan(str, Enum):
+    free = "free"
+    pro = "pro"
+    business = "business"
+
+
+class SubscriptionStatus(str, Enum):
+    active = "active"
+    canceled = "canceled"
+    past_due = "past_due"
+    trialing = "trialing"
+    inactive = "inactive"
+
+
+class CheckoutSessionRequest(BaseModel):
+    plan: SubscriptionPlan
+
+    @field_validator("plan")
+    @classmethod
+    def validate_paid_plan(cls, value: "SubscriptionPlan") -> "SubscriptionPlan":
+        if value == SubscriptionPlan.free:
+            raise ValueError("Plano gratuito não requer pagamento")
+        return value
+
+
+class ChangePlanRequest(BaseModel):
+    plan: SubscriptionPlan
+
+    @field_validator("plan")
+    @classmethod
+    def validate_paid_plan(cls, value: "SubscriptionPlan") -> "SubscriptionPlan":
+        if value == SubscriptionPlan.free:
+            raise ValueError("Para cancelar, use o endpoint de cancelamento")
+        return value
+
+
+class CheckoutSessionResponse(BaseModel):
+    checkout_url: str
+
+
+class PortalSessionResponse(BaseModel):
+    portal_url: str
+
+
+class SubscriptionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    user_id: UUID
+    plan: SubscriptionPlan
+    status: SubscriptionStatus
+    current_period_end: Optional[datetime] = None
+    scheduled_plan: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

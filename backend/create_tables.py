@@ -9,7 +9,7 @@ import asyncio
 from app.core.database import Base, engine
 
 # noqa: F401 — import models so SQLAlchemy registers them
-import app.models.user  # noqa: F401  (registers User, UserProfile, CandidateProfile, RecruiterProfile, …)
+import app.models.user  # noqa: F401  (registers User, UserProfile, CandidateProfile, RecruiterProfile, Subscription, …)
 
 
 async def create_all() -> None:
